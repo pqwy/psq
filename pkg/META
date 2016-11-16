@@ -1,0 +1,7 @@
+description = "Functional Priority Search Queues"
+version = "%%VERSION_NUM%%"
+requires = ""
+archive(byte) = "psq.cma"
+archive(native) = "psq.cmxa"
+plugin(byte) = "psq.cma"
+plugin(native) = "psq.cmxs"

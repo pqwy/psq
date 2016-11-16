@@ -1,0 +1,40 @@
+#require "fmt"
+#directory "_build/src"
+#load "psq.cma"
+
+let shuff arr =
+  let n = Array.length arr in
+  for i = 0 to n - 2 do
+    let j = Random.int (n - i) + i in
+    let t = arr.(i) in
+    arr.(i) <- arr.(j);
+    arr.(j) <- t
+  done
+
+let permutation n =
+  let arr = Array.init n (fun x -> x) in
+  shuff arr;
+  Array.to_list arr
+
+let rec (--) a b = if a > b then [] else a :: succ a -- b
+
+module Q = Psq.Make
+  (struct type t = int let compare = compare end)
+  (struct type t = int let compare = compare end)
+
+let pp_int ppf = Format.fprintf ppf "%d"
+let pp_pair pp1 pp2 ppf (a, b) = Format.fprintf ppf "@[(%a,@ %a)@]" pp1 a pp2 b
+
+let pp_dump = Q.pp_dump pp_int pp_int
+let pp = Q.pp (pp_pair pp_int pp_int)
+
+let sample = [
+  "A", 4;
+  "B", 5;
+  "C", 2;
+  "D", 1;
+  "E", 9;
+  "F", 0;
+  "G", 4;
+  "H", 0;
+]
