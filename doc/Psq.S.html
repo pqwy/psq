@@ -1,0 +1,167 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html>
+<head>
+<link rel="stylesheet" href="style.css" type="text/css">
+<meta content="text/html; charset=utf-8" http-equiv="Content-Type">
+<link rel="Start" href="index.html">
+<link rel="next" href="Psq.Ordered.html">
+<link rel="Up" href="Psq.html">
+<link title="Index of types" rel=Appendix href="index_types.html">
+<link title="Index of values" rel=Appendix href="index_values.html">
+<link title="Index of modules" rel=Appendix href="index_modules.html">
+<link title="Index of module types" rel=Appendix href="index_module_types.html">
+<link title="Psq" rel="Chapter" href="Psq.html"><link title="Priority Search Queue" rel="Section" href="#1_PrioritySearchQueue">
+<link title="Access by k" rel="Section" href="#1_Accessbyk">
+<link title="Access by min p" rel="Section" href="#1_Accessbyminp">
+<link title="Aggregate access" rel="Section" href="#1_Aggregateaccess">
+<link title="Conversions" rel="Section" href="#1_Conversions">
+<link title="Pretty-printing" rel="Section" href="#1_Prettyprinting">
+<title>Psq.S</title>
+</head>
+<body>
+<div class="navbar">&nbsp;<a class="up" href="Psq.html" title="Psq">Up</a>
+&nbsp;<a class="post" href="Psq.Ordered.html" title="Psq.Ordered">Next</a>
+</div>
+<h1>Module type <a href="type_Psq.S.html">Psq.S</a></h1>
+
+<pre><span class="keyword">module type</span> S = <code class="code"><span class="keyword">sig</span></code> <a href="Psq.S.html">..</a> <code class="code"><span class="keyword">end</span></code></pre><div class="info modtype top">
+Signature of priority search queues.<br>
+</div>
+<hr width="100%">
+<br>
+<h1 id="1_PrioritySearchQueue">Priority Search Queue</h1><br>
+
+<pre><span id="TYPEt"><span class="keyword">type</span> <code class="type"></code>t</span> </pre>
+<div class="info ">
+A search queue.<br>
+</div>
+
+
+<pre><span id="TYPEk"><span class="keyword">type</span> <code class="type"></code>k</span> </pre>
+<div class="info ">
+Keys in <a href="Psq.S.html#TYPEt"><code class="code">t</code></a>.<br>
+</div>
+
+
+<pre><span id="TYPEp"><span class="keyword">type</span> <code class="type"></code>p</span> </pre>
+<div class="info ">
+Priorities in <a href="Psq.S.html#TYPEt"><code class="code">t</code></a>.<br>
+</div>
+
+
+<pre><span id="VALempty"><span class="keyword">val</span> empty</span> : <code class="type"><a href="Psq.S.html#TYPEt">t</a></code></pre><div class="info ">
+<code class="code">empty</code> is the search queue that contains no bindings.<br>
+</div>
+
+<pre><span id="VALsg"><span class="keyword">val</span> sg</span> : <code class="type"><a href="Psq.S.html#TYPEk">k</a> -> <a href="Psq.S.html#TYPEp">p</a> -> <a href="Psq.S.html#TYPEt">t</a></code></pre><div class="info ">
+<code class="code">sg k p</code> is the singleton search queue, containing only the
+      binding <code class="code">k <span class="keywordsign">-&gt;</span> p</code>.<br>
+</div>
+
+<pre><span id="VALis_empty"><span class="keyword">val</span> is_empty</span> : <code class="type"><a href="Psq.S.html#TYPEt">t</a> -> bool</code></pre><div class="info ">
+<code class="code">is_empty t</code> is <code class="code"><span class="keyword">true</span></code> iff <code class="code">t</code> is <a href="Psq.S.html#VALempty"><code class="code">empty</code></a>.<br>
+</div>
+
+<pre><span id="VALsize"><span class="keyword">val</span> size</span> : <code class="type"><a href="Psq.S.html#TYPEt">t</a> -> int</code></pre><div class="info ">
+<code class="code">size t</code> is the number of distinct bindings in <code class="code">t</code>.<br>
+</div>
+<br>
+<h1 id="1_Accessbyk">Access by <code class="code">k</code></h1><br>
+
+<pre><span id="VALmem"><span class="keyword">val</span> mem</span> : <code class="type"><a href="Psq.S.html#TYPEk">k</a> -> <a href="Psq.S.html#TYPEt">t</a> -> bool</code></pre><div class="info ">
+<code class="code">find k t</code> is <code class="code"><span class="keyword">true</span></code> iff <code class="code">k</code> is bound in <code class="code">t</code>.<br>
+</div>
+
+<pre><span id="VALfind"><span class="keyword">val</span> find</span> : <code class="type"><a href="Psq.S.html#TYPEk">k</a> -> <a href="Psq.S.html#TYPEt">t</a> -> <a href="Psq.S.html#TYPEp">p</a> option</code></pre><div class="info ">
+<code class="code">find k t</code> is <code class="code"><span class="constructor">Some</span> p</code> if <code class="code">t</code> contains the binding <code class="code">k <span class="keywordsign">-&gt;</span> p</code>, or <code class="code"><span class="constructor">None</span></code>
+      otherwise.<br>
+</div>
+
+<pre><span id="VALadd"><span class="keyword">val</span> add</span> : <code class="type"><a href="Psq.S.html#TYPEk">k</a> -> <a href="Psq.S.html#TYPEp">p</a> -> <a href="Psq.S.html#TYPEt">t</a> -> <a href="Psq.S.html#TYPEt">t</a></code></pre><div class="info ">
+<code class="code">add k p t</code> is <code class="code">t</code> with the binding <code class="code">k <span class="keywordsign">-&gt;</span> p</code>. If <code class="code">k</code> is already bound in
+      <code class="code">t</code>, that binding is replaced.<br>
+</div>
+
+<pre><span id="VALremove"><span class="keyword">val</span> remove</span> : <code class="type"><a href="Psq.S.html#TYPEk">k</a> -> <a href="Psq.S.html#TYPEt">t</a> -> <a href="Psq.S.html#TYPEt">t</a></code></pre><div class="info ">
+<code class="code">remove k t</code> is <code class="code">t</code> without the binding for <code class="code">k</code>, or <code class="code">t</code>, if <code class="code">k</code> is not
+      bound in <code class="code">t</code>.<br>
+</div>
+
+<pre><span id="VALadjust"><span class="keyword">val</span> adjust</span> : <code class="type">(<a href="Psq.S.html#TYPEp">p</a> -> <a href="Psq.S.html#TYPEp">p</a>) -> <a href="Psq.S.html#TYPEk">k</a> -> <a href="Psq.S.html#TYPEt">t</a> -> <a href="Psq.S.html#TYPEt">t</a></code></pre><div class="info ">
+<code class="code">adjust f k t</code> is <code class="code">t</code> with the binding <code class="code">k <span class="keywordsign">-&gt;</span> p</code> replaced by <code class="code">k <span class="keywordsign">-&gt;</span> f p</code>.
+      When <code class="code">k</code> is not bound in <code class="code">t</code>, the result is <code class="code">t</code>.<br>
+</div>
+<br>
+<h1 id="1_Accessbyminp">Access by min <code class="code">p</code></h1><br>
+
+<pre><span id="VALmin"><span class="keyword">val</span> min</span> : <code class="type"><a href="Psq.S.html#TYPEt">t</a> -> (<a href="Psq.S.html#TYPEk">k</a> * <a href="Psq.S.html#TYPEp">p</a>) option</code></pre><div class="info ">
+<code class="code">min t</code> is the binding <code class="code"><span class="constructor">Some</span> (k, p)</code> where <code class="code">p</code> is minimal in <code class="code">t</code>, or
+      <code class="code"><span class="constructor">None</span></code> if <code class="code">t</code> is <a href="Psq.S.html#VALempty"><code class="code">empty</code></a>.<br>
+</div>
+
+<pre><span id="VALrest"><span class="keyword">val</span> rest</span> : <code class="type"><a href="Psq.S.html#TYPEt">t</a> -> <a href="Psq.S.html#TYPEt">t</a> option</code></pre><div class="info ">
+<code class="code">rest t</code> is <code class="code">t</code> without the binding <code class="code">min t</code>, or <code class="code"><span class="constructor">None</span></code>.<br>
+</div>
+
+<pre><span id="VALpop"><span class="keyword">val</span> pop</span> : <code class="type"><a href="Psq.S.html#TYPEt">t</a> -> ((<a href="Psq.S.html#TYPEk">k</a> * <a href="Psq.S.html#TYPEp">p</a>) * <a href="Psq.S.html#TYPEt">t</a>) option</code></pre><div class="info ">
+<code class="code">pop t</code> is <code class="code">(min t, rest t)</code>, or <code class="code"><span class="constructor">None</span></code>.<br>
+</div>
+
+<pre><span id="VALfold_at_most"><span class="keyword">val</span> fold_at_most</span> : <code class="type"><a href="Psq.S.html#TYPEp">p</a> -> (<a href="Psq.S.html#TYPEk">k</a> -> <a href="Psq.S.html#TYPEp">p</a> -> 'a -> 'a) -> 'a -> <a href="Psq.S.html#TYPEt">t</a> -> 'a</code></pre><div class="info ">
+<code class="code">fold_at_most p0 f z q</code> folds <code class="code">f</code> over bindings <code class="code">k <span class="keywordsign">-&gt;</span> p</code> where <code class="code">p</code> is not
+      larger than <code class="code">p0</code>, in key-ascending order.<br>
+</div>
+
+<pre><span id="VALiter_at_most"><span class="keyword">val</span> iter_at_most</span> : <code class="type"><a href="Psq.S.html#TYPEp">p</a> -> (<a href="Psq.S.html#TYPEk">k</a> -> <a href="Psq.S.html#TYPEp">p</a> -> unit) -> <a href="Psq.S.html#TYPEt">t</a> -> unit</code></pre><div class="info ">
+<code class="code">iter_at_most p0 f q</code> applies <code class="code">f</code> to the bindings <code class="code">k <span class="keywordsign">-&gt;</span> p</code> where <code class="code">p</code> is
+      not larger than <code class="code">p0</code>, in key-ascending order.<br>
+</div>
+<br>
+<h1 id="1_Aggregateaccess">Aggregate access</h1><br>
+
+<pre><span id="VALfold"><span class="keyword">val</span> fold</span> : <code class="type">(<a href="Psq.S.html#TYPEk">k</a> -> <a href="Psq.S.html#TYPEp">p</a> -> 'a -> 'a) -> 'a -> <a href="Psq.S.html#TYPEt">t</a> -> 'a</code></pre><div class="info ">
+<code class="code">fold f z t</code> is <code class="code">f k0 p0 (f k1 p1 ... (f kn pn z))</code>. Bindings are folded
+      over in key-ascending order.<br>
+</div>
+
+<pre><span id="VALfilter"><span class="keyword">val</span> filter</span> : <code class="type">(<a href="Psq.S.html#TYPEk">k</a> -> <a href="Psq.S.html#TYPEp">p</a> -> bool) -> <a href="Psq.S.html#TYPEt">t</a> -> <a href="Psq.S.html#TYPEt">t</a></code></pre><div class="info ">
+<code class="code">filter p t</code> is the search queue with exactly the bindings in <code class="code">t</code> which
+      satisfy the predicate <code class="code">p</code>.<br>
+</div>
+
+<pre><span id="VALpartition"><span class="keyword">val</span> partition</span> : <code class="type">(<a href="Psq.S.html#TYPEk">k</a> -> <a href="Psq.S.html#TYPEp">p</a> -> bool) -> <a href="Psq.S.html#TYPEt">t</a> -> <a href="Psq.S.html#TYPEt">t</a> * <a href="Psq.S.html#TYPEt">t</a></code></pre><div class="info ">
+<code class="code">partition p t</code> splits <code class="code">t</code> into <code class="code">(t1, t2)</code>, where <code class="code">t1</code> contains the
+      bindings in <code class="code">t</code> which satisfy the predicate <code class="code">p</code>, and <code class="code">t2</code> contains those
+      that don't.<br>
+</div>
+
+<pre><span id="VALiter"><span class="keyword">val</span> iter</span> : <code class="type">(<a href="Psq.S.html#TYPEk">k</a> -> <a href="Psq.S.html#TYPEp">p</a> -> unit) -> <a href="Psq.S.html#TYPEt">t</a> -> unit</code></pre><div class="info ">
+<code class="code">iter f t</code> applies <code class="code">f</code> to all bindings in <code class="code">t</code> in key-ascending order.<br>
+</div>
+<br>
+<h1 id="1_Conversions">Conversions</h1><br>
+
+<pre><span id="VALto_list"><span class="keyword">val</span> to_list</span> : <code class="type"><a href="Psq.S.html#TYPEt">t</a> -> (<a href="Psq.S.html#TYPEk">k</a> * <a href="Psq.S.html#TYPEp">p</a>) list</code></pre><div class="info ">
+<code class="code">to_list t</code> are all the bindings in <code class="code">t</code> in key-ascending order.<br>
+</div>
+
+<pre><span id="VALof_list"><span class="keyword">val</span> of_list</span> : <code class="type">(<a href="Psq.S.html#TYPEk">k</a> * <a href="Psq.S.html#TYPEp">p</a>) list -> <a href="Psq.S.html#TYPEt">t</a></code></pre><div class="info ">
+<code class="code">of_list kps</code> is a <code class="code">t</code> with the bindings from <code class="code">kps</code>. When there are
+      multiple bindings for a given <code class="code">k</code>, it is unspecified which one is chosen.<br>
+</div>
+
+<pre><span id="VALof_sorted_list"><span class="keyword">val</span> of_sorted_list</span> : <code class="type">(<a href="Psq.S.html#TYPEk">k</a> * <a href="Psq.S.html#TYPEp">p</a>) list -> <a href="Psq.S.html#TYPEt">t</a></code></pre><div class="info ">
+<code class="code">of_sorted_list kps</code> is <code class="code">t</code> with the bindings in <code class="code">kps</code>. This operation is
+      generally faster than <a href="Psq.S.html#VALof_list"><code class="code">of_list</code></a>. <code class="code">kps</code> must contain the
+      bindings in key-ascending order without repetitions. When this is not the
+      case, the result is undefined.<br>
+</div>
+<br>
+<h1 id="1_Prettyprinting">Pretty-printing</h1><br>
+
+<pre><span id="VALpp"><span class="keyword">val</span> pp</span> : <code class="type">?sep:(Format.formatter -> unit -> unit) -><br>       (Format.formatter -> <a href="Psq.S.html#TYPEk">k</a> * <a href="Psq.S.html#TYPEp">p</a> -> unit) -><br>       Format.formatter -> <a href="Psq.S.html#TYPEt">t</a> -> unit</code></pre><div class="info ">
+<code class="code">pp ?sep pp_kp ppf t</code> pretty-prints <code class="code">t</code> to <code class="code">ppf</code>, using <code class="code">pp_kp</code> to print
+      the bindings and <code class="code">~sep</code> to separate them. <code class="code">~sep</code> defaults to
+      <code class="code"><span class="constructor">Format</span>.print_space</code>.<br>
+</div>
+</body></html>
