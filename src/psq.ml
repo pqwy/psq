@@ -232,16 +232,16 @@ S with type k = K.t and type p = P.t = struct
       | Binv (t1, sk, t2) ->
           if K.compare k0 sk <= 0 then go k0 t1 >< t2 else t1 >< go k0 t2
       | Sgv (k, _) when K.compare k k0 = 0 -> N
-      | Sgv _ | Nv -> raise Not_found in
-    try go k0 t with Not_found -> t
+      | Sgv _ | Nv -> raise_notrace Exit in
+    try go k0 t with Exit -> t
 
   let adjust f k0 t =
     let rec go f k0 t = match view t with
       | Binv (t1, sk, t2) ->
           if K.compare k0 sk <= 0 then go f k0 t1 >|< t2 else t1 >|< go f k0 t2
       | Sgv (k, p) when K.compare k k0 = 0 -> sg (k, f p)
-      | Sgv _ | Nv -> raise Not_found in
-    try go f k0 t with Not_found -> t
+      | Sgv _ | Nv -> raise_notrace Exit in
+    try go f k0 t with Exit -> t
 
   let rec filter pf t = match view t with
     | Nv -> N
@@ -267,8 +267,9 @@ S with type k = K.t and type p = P.t = struct
       | xs -> let m = n / 2 in go m L.(take m xs) >|< go (n - m) L.(drop m xs)
     in go (L.length xs) xs
 
-  let cmp (k1, _) (k2, _) = K.compare k1 k2
-  let of_list xs = List.sort_uniq cmp xs |> of_sorted_list
+  let of_list xs =
+    let cmp (k1, _) (k2, _) = K.compare k1 k2 in
+    List.sort_uniq cmp xs |> of_sorted_list
 
   (* XXX Re-benchmark after un-viewing add. *)
   (* let of_list xs = List.fold_left (fun q pk -> add pk q) empty xs *)
