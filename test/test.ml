@@ -176,6 +176,10 @@ let () = Alcotest.run "psq" [
       (fun (q, p0) ->
         Q.fold_at_most p0 (fun k p xs -> (k, p)::xs) [] q
           =|= list_of_iter_2 (fun f -> Q.iter_at_most p0 f q));
+    test "seq = fold" psq_w_any_key
+      (fun (q, p0) ->
+        (Q.seq_at_most p0 q |> List.of_seq)
+          =|= Q.fold_at_most p0 (fun k p xs -> (k, p) :: xs) [] q);
   ];
 
   "aggregate", [
@@ -183,6 +187,8 @@ let () = Alcotest.run "psq" [
       (fun q -> Q.to_list q =|= Q.fold (fun k p xs -> (k, p) :: xs) [] q);
     test "to_list = iter" psq
       (fun q -> Q.to_list q =|= list_of_iter_2 (fun f -> Q.iter f q));
+    test "to_list = to_seq" psq
+      (fun q -> Q.to_list q =|= (Q.to_seq q |> List.of_seq));
   ];
 
   "p selection",

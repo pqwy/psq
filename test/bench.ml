@@ -46,4 +46,4 @@ let _ = Unmark_cli.main "psq" [
     bench "Random.int" (fun () -> Random.int 1000)
   ; group "map" [runs m 10; runs m 100; runs m 1000]
   ; group "psq" [runs q 10; runs q 100; runs q 1000]
-  ]
+]

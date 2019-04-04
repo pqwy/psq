@@ -98,6 +98,10 @@ module type S = sig
   (** [iter_at_most p0 f q] applies [f] to the bindings [k -> p] where [p] is
       not larger than [p0], in key-ascending order. *)
 
+  val seq_at_most : p -> t -> (k * p) Seq.t
+  (** [iter_at_most p0 f q] is the sequence of bindings [k -> p] where [p] not
+      larger than [p0], in key-ascending order. *)
+
   (** {1 Aggregate access} *)
 
   val fold : (k -> p -> 'a -> 'a) -> 'a -> t -> 'a
@@ -122,14 +126,25 @@ module type S = sig
   (** [to_list t] are all the bindings in [t] in key-ascending order. *)
 
   val of_list : (k * p) list -> t
-  (** [of_list kps] is a [t] with the bindings from [kps]. When there are
-      multiple bindings for a given [k], it is unspecified which one is chosen. *)
+  (** [of_list kps] is [t] with bindings [kps].
+      When there are multiple bindings for a given [k], it is unspecified which
+      one is chosen. *)
 
   val of_sorted_list : (k * p) list -> t
-  (** [of_sorted_list kps] is [t] with the bindings in [kps]. This operation is
-      generally faster than {{!of_list}[of_list]}. [kps] must contain the
-      bindings in key-ascending order without repetitions. When this is not the
-      case, the result is undefined. *)
+  (** [of_sorted_list kps] is [t] with bindings [kps].
+      This operation is generally faster than {{!of_list}[of_list]}.
+      [kps] must contain the bindings in key-ascending order without
+      repetitions. When this is not the case, the result is undefined. *)
+
+  (** {6 Iterators} *)
+
+  val to_seq : t -> (k * p) Seq.t
+  (** [to_seq t] iterates over all bindings in [t] in key-ascending order. *)
+
+  val of_seq : (k * p) Seq.t -> t
+  (** [of_seq kps] builds [t] from bindings [kps].
+      When there are multiple bindings for a given [k], it is unspecified which
+      one is chosen. *)
 
   (** {1 Pretty-printing} *)
 

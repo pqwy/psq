@@ -25,6 +25,7 @@ module type S = sig
   val pop : t -> ((k * p) * t) option
   val fold_at_most : p -> (k -> p -> 'a -> 'a) -> 'a -> t -> 'a
   val iter_at_most : p -> (k -> p -> unit) -> t -> unit
+  val seq_at_most : p -> t -> (k * p) Seq.t
   val fold : (k -> p -> 'a -> 'a) -> 'a -> t -> 'a
   val filter : (k -> p -> bool) -> t -> t
   val partition : (k -> p -> bool) -> t -> t * t
@@ -32,6 +33,8 @@ module type S = sig
   val to_list : t -> (k * p) list
   val of_list : (k * p) list -> t
   val of_sorted_list : (k * p) list -> t
+  val to_seq : t -> (k * p) Seq.t
+  val of_seq : (k * p) Seq.t -> t
   val pp : ?sep:(unit fmt) -> (k * p) fmt -> t fmt
   val depth : t -> int
   val pp_dump : k fmt -> p fmt -> t fmt
@@ -184,6 +187,9 @@ S with type k = K.t and type p = P.t = struct
   let iter_at_most p0 f t =
     foldr_at_most p0 (fun (k, p) i -> f k p; i ()) t ignore
 
+  let seq_at_most p0 t () =
+    foldr_at_most p0 (fun kp seq -> Seq.Cons (kp, seq)) t Seq.empty
+
   (* XXX FIXME:
      Splitting the pennant while going down. Make add/remove/adjust work on bare
      trees to avoid thrashing the GC during traversal. *)
@@ -263,29 +269,27 @@ S with type k = K.t and type p = P.t = struct
     let cmp (k1, _) (k2, _) = K.compare k1 k2 in
     List.sort_uniq cmp xs |> of_sorted_list
 
-  (* XXX Re-benchmark after un-viewing add. *)
-  (* let of_list xs = List.fold_left (fun q pk -> add pk q) empty xs *)
-
-  let to_list t =
-    let rec go kp0 acc = function
-      | Lf -> kp0 :: acc
-      | NdL (kp, t1, _, t2, _) -> go kp (go kp0 acc t2) t1
-      | NdR (kp, t1, _, t2, _) -> go kp0 (go kp acc t2) t1 in
-    match t with N -> [] | T (kp, _, t) -> go kp [] t
-
-  let fold f z t =
-    let rec go (k0, p0 as kp0) f z = function
-      | Lf -> f k0 p0 z
-      | NdL (kp, t1, _, t2, _) -> go kp f (go kp0 f z t2) t1
-      | NdR (kp, t1, _, t2, _) -> go kp0 f (go kp f z t2) t1 in
-    match t with N -> z | T (kp, _, t) -> go kp f z t
+  (* XXX List.of_seq can avoid reversing the list, but needs 4.7. *)
+  let of_seq xs = Seq.fold_left (fun xs a -> a::xs) [] xs |> List.rev |> of_list
 
   let iter f t =
     let rec go (p0, k0 as pk0) f = function
-      | Lf -> f p0 k0
-      | NdL (pk, t1, _, t2, _) -> go pk f t1; go pk0 f t2
-      | NdR (pk, t1, _, t2, _) -> go pk0 f t1; go pk f t2 in
+      Lf -> f p0 k0
+    | NdL (pk, t1, _, t2, _) -> go pk f t1; go pk0 f t2
+    | NdR (pk, t1, _, t2, _) -> go pk0 f t1; go pk f t2 in
     match t with N -> () | T (pk, _, t) -> go pk f t
+
+  let foldr f t z =
+    let rec go kp0 f z = function
+      Lf -> f kp0 z
+    | NdL (kp, t1, _, t2, _) -> go kp f (fun () -> go kp0 f z t2) t1
+    | NdR (kp, t1, _, t2, _) -> go kp0 f (fun () -> go kp f z t2) t1 in
+    match t with T (kp, _, t) -> go kp f z t | N -> z ()
+
+  let nil () = []
+  let fold f z t = foldr (fun (k, p) z -> f k p (z ())) t (fun () -> z)
+  let to_list t = foldr (fun kp xs -> kp :: xs ()) t nil
+  let to_seq t () = foldr (fun kp xs -> Seq.Cons (kp, xs)) t Seq.empty
 
   let add k p = add (k, p)
   let sg k p = sg (k, p)

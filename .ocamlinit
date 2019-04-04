@@ -1,6 +1,6 @@
 #require "fmt"
-#directory "_build/src"
-#load "psq.cma"
+(* #directory "_build/src" *)
+(* #load "psq.cma" *)
 
 let shuff arr =
   let n = Array.length arr in

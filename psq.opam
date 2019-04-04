@@ -12,6 +12,7 @@ build: [ [ "dune" "subst" ] {pinned}
 depends: [
   "ocaml" {>="4.03.0"}
   "dune" {build & >= "1.7"}
+  "seq"
   "qcheck-core"     {with-test}
   "qcheck-alcotest" {with-test}
   "alcotest"        {with-test}
