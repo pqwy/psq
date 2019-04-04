@@ -1,0 +1,4 @@
+(library
+  (public_name psq)
+  (synopsis "Functional Priority Search Queues")
+  (wrapped false))

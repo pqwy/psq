@@ -1,10 +1,6 @@
 (* Copyright (c) 2016 David Kaloper Meršinjak. All rights reserved.
    See LICENSE.md *)
 
-module I = struct type t = int let compare (a: int) b = compare a b end
-module Q = Psq.Make (I) (I)
-module M = Map.Make (I)
-
 let shuffle arr =
   let n = Array.length arr in
   for i = 0 to n - 2 do
@@ -18,32 +14,36 @@ let permutation n =
   shuffle arr;
   Array.to_list arr
 
-let runs name ~of_list ~add ~find ~remove size =
-  let (n, measure) = (1000, `Cputime_ns) in
+module type S = sig
+  type t
+  val add     : int -> int -> t -> t
+  val find    : int -> t -> int option
+  val remove  : int -> t -> t
+  val of_list : (int * int) list -> t
+end
+module I = struct type t = int let compare (a: int) b = compare a b end
+let q = (module Psq.Make (I) (I): S)
+let m = (module struct
+  module M = Map.Make (I)
+  type t = int M.t
+  let find, add, remove = M.(find_opt, add, remove)
+  let of_list xs = List.fold_left (fun m (k, v) -> M.add k v m) M.empty xs
+end: S)
+
+open Unmark
+
+let runs ((module M: S)) size =
   let xs = permutation size |> List.map (fun x -> x, x) in
-  let q  = of_list xs
-  and q' = List.map (fun (k, p) -> (k * 2, p * 2)) xs |> of_list in
-  Format.printf "\n%s / %d\n%!" name size;
-  Unmark.time ~tag:"find" ~measure ~n
-    (fun () -> for i = 0 to size - 1 do find i q done);
-  Unmark.time ~tag:"add" ~measure ~n (fun () ->
-    for i = 0 to size - 1 do let k = i * 2 + 1 in add k k q' done);
-  Unmark.time ~tag:"remove" ~measure ~n
-    (fun () -> for i = 0 to size - 1 do remove i q done);
-  ()
+  let q  = M.of_list xs
+  and q' = List.map (fun (k, p) -> (k * 2, p * 2)) xs |> M.of_list in
+  group (Fmt.strf "x%d" size) [
+    bench "find" (fun () -> M.find (Random.int size) q)
+  ; bench "add" (fun () -> let k = Random.int size + 1 in M.add k k q')
+  ; bench "remove" (fun () -> M.remove (Random.int size) q)
+  ]
 
-let m_of_list xs =
-  List.fold_left (fun m (k, v) -> M.add k v m) M.empty xs
-
-let () =
-  Unmark.warmup ();
-  let (of_list, add, find, remove) = M.(m_of_list, add, find, remove) in
-  runs "map" ~of_list ~add ~find ~remove 10;
-  runs "map" ~of_list ~add ~find ~remove 100;
-  runs "map" ~of_list ~add ~find ~remove 1000;
-  let (of_list, add, find, remove) = Q.(of_list, add, find, remove) in
-  runs "psq" ~of_list ~add ~find ~remove 10;
-  runs "psq" ~of_list ~add ~find ~remove 100;
-  runs "psq" ~of_list ~add ~find ~remove 1000;
-  ()
-
+let _ = Unmark_cli.main "psq" [
+    bench "Random.int" (fun () -> Random.int 1000)
+  ; group "map" [runs m 10; runs m 100; runs m 1000]
+  ; group "psq" [runs q 10; runs q 100; runs q 1000]
+  ]

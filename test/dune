@@ -1,0 +1,14 @@
+(test
+  (name test)
+  (modules test)
+  (libraries psq alcotest))
+
+(executable
+  (name bench)
+  (modules bench)
+  (libraries psq unmark unmark.cli))
+
+(executable
+  (name search)
+  (modules search)
+  (libraries psq fmt))

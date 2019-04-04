@@ -18,6 +18,6 @@ psq is distributed under the ISC license.
 
 ## Documentation
 
-Interface, [online][doc].
+Interface files, or [online][doc].
 
-[doc]: https://pqwy.github.io/psq/doc
+[doc]: https://pqwy.github.io/psq/doc/psq/
