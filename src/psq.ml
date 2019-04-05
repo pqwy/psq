@@ -169,28 +169,20 @@ S with type k = K.t and type p = P.t = struct
           if K.compare k0 sk <= 0 then go k0 t1 else go k0 t2 in
     match t with N -> false | T ((k, _), _, t) -> K.compare k0 k = 0 || go k0 t
 
+  let foldr_at_most p0 f t z =
+    let rec f1 p0 (_, p as kp) f z t =
+      if P.compare p p0 <= 0 then f2 p0 kp f z t else z ()
+    and f2 p0 kp0 f z = function
+      Lf -> f kp0 z
+    | NdL (kp, t1, _, t2, _) -> f1 p0 kp f (fun () -> f2 p0 kp0 f z t2) t1
+    | NdR (kp, t1, _, t2, _) -> f2 p0 kp0 f (fun () -> f1 p0 kp f z t2) t1 in
+    match t with T (kp0, _, t) -> f1 p0 kp0 f z t | _ -> z ()
+
   let fold_at_most p0 f z t =
-    let rec go p0 f z = function
-      | Lf -> z
-      | NdL ((k, p), t1, _, t2, _) | NdR ((k, p), t1, _, t2, _)
-        when P.compare p p0 <= 0 -> go p0 f (f k p @@ go p0 f z t2) t1
-      | NdL (_, _, _, t2, _) -> go p0 f z t2
-      | NdR (_, t1, _, _, _) -> go p0 f z t1 in
-    match t with
-    | T ((k, p), _, t) when P.compare p p0 <= 0 -> f k p @@ go p0 f z t
-    | _ -> z
+    foldr_at_most p0 (fun (k, p) a -> f k p (a ())) t (fun () -> z)
 
   let iter_at_most p0 f t =
-    let rec go p0 f = function
-      | Lf -> ()
-      | NdL ((k, p), t1, _, t2, _) | NdR ((k, p), t1, _, t2, _)
-        when P.compare p p0 <= 0 -> go p0 f t1; f k p; go p0 f t2
-      | NdL (_, _, _, t2, _) -> go p0 f t2
-      | NdR (_, t1, _, _, _) -> go p0 f t1 in
-    match t with
-    | T ((k, p), _, t) when P.compare p p0 <= 0 -> f k p; go p0 f t
-    | _ -> ()
-
+    foldr_at_most p0 (fun (k, p) i -> f k p; i ()) t ignore
 
   (* XXX FIXME:
      Splitting the pennant while going down. Make add/remove/adjust work on bare
