@@ -12,7 +12,10 @@ build: [ [ "dune" "subst" ] {pinned}
 depends: [
   "ocaml" {>="4.03.0"}
   "dune" {build & >= "1.7"}
-  "alcotest" {with-test} ]
+  "qcheck-core"     {with-test}
+  "qcheck-alcotest" {with-test}
+  "alcotest"        {with-test}
+]
 description: """
 Typical applications are searches, schedulers and caches. If you ever scratched
 your head because that A* didn't look quite right, a PSQ is what you needed.

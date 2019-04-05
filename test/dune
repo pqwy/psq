@@ -1,7 +1,7 @@
 (test
   (name test)
   (modules test)
-  (libraries psq alcotest))
+  (libraries psq alcotest qcheck-core qcheck-alcotest))
 
 (executable
   (name bench)
