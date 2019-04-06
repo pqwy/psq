@@ -81,8 +81,8 @@ module type S = sig
   (** [min t] is the binding [Some (k, p)] where [p] is minimal in [t], or
       [None] if [t] is {{!empty}[empty]}.
 
-      {b Note} When several bindings share the same minimal [p], it is
-      unspecified which one is [min t]. *)
+      Note that [min t] is actually the smallest [(p, k)] in [t] — when multiple
+      bindings share [p], [min t] is the one with the smallest [k]. *)
 
   val rest : t -> t option
   (** [rest t] is [t] without the binding [min t], or [None]. *)

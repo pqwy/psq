@@ -44,7 +44,8 @@ let cmpi (a: int) b = compare a b
 let cmp_k (k1, _) (k2, _) = cmpi k1 k2
 let cmp_p (_, p1) (_, p2) = cmpi p1 p2
 let sorted_by_k xs = List.sort cmp_k xs
-let sorted_by_p xs = List.sort cmp_p xs
+let sorted_by_p = List.sort @@ fun b1 b2 ->
+  match cmp_p b1 b2 with 0 -> cmp_k b1 b2 | x -> x
 let (=|=) = list_eq (fun b1 b2 -> cmp_k b1 b2 = 0 && cmp_p b1 b2 = 0)
 let (=~=) q1 q2 = Q.to_list q1 =|= Q.to_list q2
 
@@ -100,14 +101,10 @@ let () = Alcotest.run "psq" [
       (fun (q, k) ->
         Q.(to_list (add k k q)) =|=
           ((k, k) :: List.remove_assoc k (Q.to_list q) |> sorted_by_k));
-    (* test "p-order" psq_w_any_key *)
-    (*   (fun (q, k) -> *)
-    (*     to_priorities (Q.add k k q) =|= *)
-    (*       ((k, k) :: List.remove_assoc k (to_priorities q) |> sorted_by_p)); *)
     test "p-order" psq_w_any_key
       (fun (q, k) ->
-        (Q.add k k q |> to_priorities |> List.map snd) =
-          List.(k :: (remove_assoc k (to_priorities q) |> map snd) |> sort cmpi));
+        to_priorities (Q.add k k q) =|=
+          ((k, k) :: List.remove_assoc k (to_priorities q) |> sorted_by_p));
     test "balance" psq_w_any_key (fun (q, k) -> balanced (Q.add k k q));
     test "mem" psq_w_any_key (fun (q, k) -> Q.(add k k q |> mem k));
     test "find" psq_w_any_key (fun (q, k) -> Q.(add k k q |> find k) = Some k);

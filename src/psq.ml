@@ -84,15 +84,19 @@ S with type k = K.t and type p = P.t = struct
 
   let outweighs s1 s2 = s1 * 100 > s2 * 375
 
-  let rot_l (_, p1 as kp1) t1 sk1 = function
-    | NdL ((_, p2 as kp2), t2, sk2, t3, _) when P.compare p1 p2 <= 0 ->
+  let (@<=@) (k1, p1) (k2, p2) =
+    let c = P.compare p1 p2 in
+    if c = 0 then K.compare k1 k2 <= 0 else c < 0 [@@inline]
+
+  let rot_l kp1 t1 sk1 = function
+    | NdL (kp2, t2, sk2, t3, _) when kp1 @<=@ kp2 ->
         nd kp1 (nd kp2 t1 sk1 t2) sk2 t3
     | NdL (kp2, t2, sk2, t3, _) | NdR (kp2, t2, sk2, t3, _) ->
         nd kp2 (nd kp1 t1 sk1 t2) sk2 t3
     | Lf -> assert false
 
-  let rot_r (_, p1 as kp1) tt sk2 t3 = match tt with
-    | NdR ((_, p2 as kp2), t1, sk1, t2, _) when P.compare p1 p2 <= 0 ->
+  let rot_r kp1 tt sk2 t3 = match tt with
+    | NdR (kp2, t1, sk1, t2, _) when kp1 @<=@ kp2 ->
         nd kp1 t1 sk1 (nd kp2 t2 sk2 t3)
     | NdL (kp2, t1, sk1, t2, _) | NdR (kp2, t1, sk1, t2, _) ->
         nd kp2 t1 sk1 (nd kp1 t2 sk2 t3)
@@ -127,20 +131,18 @@ S with type k = K.t and type p = P.t = struct
 
   let (><) t1 t2 = match (t1, t2) with
     | (N, t) | (t, N) -> t
-    | (T ((_, p1 as kp1), sk1, t1),
-       T ((_, p2 as kp2), sk2, t2)) ->
-         if P.compare p1 p2 <= 0 then
-           T (kp1, sk2, nd_bal kp2 t1 sk1 t2)
-         else T (kp2, sk2, nd_bal kp1 t1 sk1 t2)
+    | (T (kp1, sk1, t1), T (kp2, sk2, t2)) ->
+        if kp1 @<=@ kp2 then
+          T (kp1, sk2, nd_bal kp2 t1 sk1 t2)
+        else T (kp2, sk2, nd_bal kp1 t1 sk1 t2)
 
   (* XXX repetition, parameterise (w/ inlining) *)
   let (>|<) t1 t2 = match (t1, t2) with
     | (N, t) | (t, N) -> t
-    | (T ((_, p1 as kp1), sk1, t1),
-       T ((_, p2 as kp2), sk2, t2)) ->
-         if P.compare p1 p2 <= 0 then
-           T (kp1, sk2, nd_r kp2 t1 sk1 t2)
-         else T (kp2, sk2, nd_l kp1 t1 sk1 t2)
+    | (T (kp1, sk1, t1), T (kp2, sk2, t2)) ->
+        if kp1 @<=@ kp2 then
+          T (kp1, sk2, nd_r kp2 t1 sk1 t2)
+        else T (kp2, sk2, nd_l kp1 t1 sk1 t2)
 
   let rec promote sk0 = function
     | Lf -> N
