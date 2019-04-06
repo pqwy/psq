@@ -49,19 +49,20 @@ module L = struct
 end
 
 module Make (K: Ordered) (P: Ordered) :
-S with type k = K.t and type p = P.t = struct
+  S with type k = K.t and type p = P.t =
+struct
 
   type k = K.t
   type p = P.t
 
   type t = (* SEARCH PENNANTS *)
-      N
-    | T of (k * p) * k * tree
+    N
+  | T of (k * p) * k * tree
 
   and tree = (* LOSER TREES, OH MY *)
-      Lf
-    | NdL of (k * p) * tree * k * tree * int
-    | NdR of (k * p) * tree * k * tree * int
+    Lf
+  | NdL of (k * p) * tree * k * tree * int
+  | NdR of (k * p) * tree * k * tree * int
 
   let empty = N
   let sg (k, _ as kp) = T (kp, k, Lf)
@@ -69,9 +70,9 @@ S with type k = K.t and type p = P.t = struct
   let is_empty = function N -> true | _ -> false
 
   let size_t = function
-    | Lf -> 0
-    | NdL (_, _, _, _, w)
-    | NdR (_, _, _, _, w) -> w
+    Lf -> 0
+  | NdL (_, _, _, _, w)
+  | NdR (_, _, _, _, w) -> w
 
   let size = function N -> 0 | T (_, _, t) -> size_t t + 1
 
@@ -89,35 +90,35 @@ S with type k = K.t and type p = P.t = struct
     if c = 0 then K.compare k1 k2 <= 0 else c < 0 [@@inline]
 
   let rot_l kp1 t1 sk1 = function
-    | NdL (kp2, t2, sk2, t3, _) when kp1 @<=@ kp2 ->
-        nd kp1 (nd kp2 t1 sk1 t2) sk2 t3
-    | NdL (kp2, t2, sk2, t3, _) | NdR (kp2, t2, sk2, t3, _) ->
-        nd kp2 (nd kp1 t1 sk1 t2) sk2 t3
-    | Lf -> assert false
+    NdL (kp2, t2, sk2, t3, _) when kp1 @<=@ kp2 ->
+      nd kp1 (nd kp2 t1 sk1 t2) sk2 t3
+  | NdL (kp2, t2, sk2, t3, _) | NdR (kp2, t2, sk2, t3, _) ->
+      nd kp2 (nd kp1 t1 sk1 t2) sk2 t3
+  | Lf -> assert false
 
   let rot_r kp1 tt sk2 t3 = match tt with
-    | NdR (kp2, t1, sk1, t2, _) when kp1 @<=@ kp2 ->
-        nd kp1 t1 sk1 (nd kp2 t2 sk2 t3)
-    | NdL (kp2, t1, sk1, t2, _) | NdR (kp2, t1, sk1, t2, _) ->
-        nd kp2 t1 sk1 (nd kp1 t2 sk2 t3)
-    | Lf -> assert false
+    NdR (kp2, t1, sk1, t2, _) when kp1 @<=@ kp2 ->
+      nd kp1 t1 sk1 (nd kp2 t2 sk2 t3)
+  | NdL (kp2, t1, sk1, t2, _) | NdR (kp2, t1, sk1, t2, _) ->
+      nd kp2 t1 sk1 (nd kp1 t2 sk2 t3)
+  | Lf -> assert false
 
   let rot_ll kp1 t1 sk1 = function
-    | NdL (kp2, t2, sk2, t3, _) | NdR (kp2, t2, sk2, t3, _) ->
-        rot_l kp1 t1 sk1 (rot_r kp2 t2 sk2 t3)
-    | Lf -> assert false
+    NdL (kp2, t2, sk2, t3, _) | NdR (kp2, t2, sk2, t3, _) ->
+      rot_l kp1 t1 sk1 (rot_r kp2 t2 sk2 t3)
+  | Lf -> assert false
 
   let rot_rr kp1 tt sk2 t3 = match tt with
-    | NdL (kp2, t1, sk1, t2, _) | NdR (kp2, t1, sk1, t2, _) ->
-        rot_r kp1 (rot_l kp2 t1 sk1 t2) sk2 t3
-    | Lf -> assert false
+    NdL (kp2, t1, sk1, t2, _) | NdR (kp2, t1, sk1, t2, _) ->
+      rot_r kp1 (rot_l kp2 t1 sk1 t2) sk2 t3
+  | Lf -> assert false
 
   (* Precond: at most one of t1, t2 is at most 1 away from a balanced
      configuration. *)
   let nd_bal kp t1 sk t2 =
     let s1 = size_t t1 and s2 = size_t t2 in
     match (t1, t2) with
-    | ((NdL (_, t11, _, t12, _) | NdR (_, t11, _, t12, _)), _)
+      ((NdL (_, t11, _, t12, _) | NdR (_, t11, _, t12, _)), _)
       when s1 > 1 && outweighs s1 s2 ->
         if size_t t11 > size_t t12 then
           rot_r kp t1 sk t2
@@ -130,24 +131,24 @@ S with type k = K.t and type p = P.t = struct
     | _ -> nd kp t1 sk t2
 
   let (><) t1 t2 = match (t1, t2) with
-    | (N, t) | (t, N) -> t
-    | (T (kp1, sk1, t1), T (kp2, sk2, t2)) ->
-        if kp1 @<=@ kp2 then
-          T (kp1, sk2, nd_bal kp2 t1 sk1 t2)
-        else T (kp2, sk2, nd_bal kp1 t1 sk1 t2)
+    (N, t) | (t, N) -> t
+  | (T (kp1, sk1, t1), T (kp2, sk2, t2)) ->
+      if kp1 @<=@ kp2 then
+        T (kp1, sk2, nd_bal kp2 t1 sk1 t2)
+      else T (kp2, sk2, nd_bal kp1 t1 sk1 t2)
 
   (* XXX repetition, parameterise (w/ inlining) *)
   let (>|<) t1 t2 = match (t1, t2) with
-    | (N, t) | (t, N) -> t
-    | (T (kp1, sk1, t1), T (kp2, sk2, t2)) ->
-        if kp1 @<=@ kp2 then
-          T (kp1, sk2, nd_r kp2 t1 sk1 t2)
-        else T (kp2, sk2, nd_l kp1 t1 sk1 t2)
+    (N, t) | (t, N) -> t
+  | (T (kp1, sk1, t1), T (kp2, sk2, t2)) ->
+      if kp1 @<=@ kp2 then
+        T (kp1, sk2, nd_r kp2 t1 sk1 t2)
+      else T (kp2, sk2, nd_l kp1 t1 sk1 t2)
 
   let rec promote sk0 = function
-    | Lf -> N
-    | NdL (kp, t1, sk, t2, _) -> T (kp, sk, t1) >< promote sk0 t2
-    | NdR (kp, t1, sk, t2, _) -> promote sk t1 >< T (kp, sk0, t2)
+    Lf -> N
+  | NdL (kp, t1, sk, t2, _) -> T (kp, sk, t1) >< promote sk0 t2
+  | NdR (kp, t1, sk, t2, _) -> promote sk t1 >< T (kp, sk0, t2)
 
   let min = function N -> None | T (kp, _, _) -> Some kp
   let rest = function N -> None | T (_, sk, t) -> Some (promote sk t)
@@ -155,23 +156,23 @@ S with type k = K.t and type p = P.t = struct
 
   let find k0 t =
     let rec go k0 = function
-      | Lf -> None
-      | NdL ((k, p), t1, sk, t2, _)
-      | NdR ((k, p), t1, sk, t2, _) ->
-          if K.compare k0 k = 0 then Some p else
-            if K.compare k0 sk <= 0 then go k0 t1 else
-              go k0 t2 in
+      Lf -> None
+    | NdL ((k, p), t1, sk, t2, _)
+    | NdR ((k, p), t1, sk, t2, _) ->
+        if K.compare k0 k = 0 then Some p else
+          if K.compare k0 sk <= 0 then go k0 t1 else
+            go k0 t2 in
     match t with
-    | N -> None
+      N -> None
     | T ((k, p), _, t) -> if K.compare k0 k = 0 then Some p else go k0 t
 
   let mem k0 t =
     let rec go k0 = function
-      | Lf -> false
-      | NdL ((k, _), t1, sk, t2, _)
-      | NdR ((k, _), t1, sk, t2, _) ->
-          K.compare k0 k = 0 ||
-          if K.compare k0 sk <= 0 then go k0 t1 else go k0 t2 in
+      Lf -> false
+    | NdL ((k, _), t1, sk, t2, _)
+    | NdR ((k, _), t1, sk, t2, _) ->
+        K.compare k0 k = 0 ||
+        if K.compare k0 sk <= 0 then go k0 t1 else go k0 t2 in
     match t with N -> false | T ((k, _), _, t) -> K.compare k0 k = 0 || go k0 t
 
   let foldr_at_most p0 f t z =
@@ -199,12 +200,12 @@ S with type k = K.t and type p = P.t = struct
   type view = Nv | Sgv of (k * p) | Binv of t * K.t * t
 
   let view = function
-    | N -> Nv
-    | T (kp, _, Lf) -> Sgv kp
-    | T (kp1, sk1, NdL (kp2, t1, sk2, t2, _)) ->
-        Binv (T (kp2, sk2, t1), sk2, T (kp1, sk1, t2))
-    | T (kp1, sk1, NdR (kp2, t1, sk2, t2, _)) ->
-        Binv (T (kp1, sk2, t1), sk2, T (kp2, sk1, t2))
+    N -> Nv
+  | T (kp, _, Lf) -> Sgv kp
+  | T (kp1, sk1, NdL (kp2, t1, sk2, t2, _)) ->
+      Binv (T (kp2, sk2, t1), sk2, T (kp1, sk1, t2))
+  | T (kp1, sk1, NdR (kp2, t1, sk2, t2, _)) ->
+      Binv (T (kp1, sk2, t1), sk2, T (kp2, sk1, t2))
 
   (* let rec add (k0, _ as kp0) t = match view t with *)
   (*   | Nv -> sg kp0 *)
@@ -216,56 +217,56 @@ S with type k = K.t and type p = P.t = struct
 
   (* XXX This hand-inlining of [view] is just sad. *)
   let rec add (k0, _ as kp0) = function
-    | N -> sg kp0
-    | T ((k, _), _, Lf) as t ->
-        let t0 = sg kp0 and c = K.compare k0 k in
-        if c < 0 then t0 >|< t else if c > 0 then t >|< t0 else t0
-    | T (kp1, sk1, NdL (kp2, t1, sk2, t2, _)) ->
-        let t = T (kp2, sk2, t1) and t' = T (kp1, sk1, t2) in
-        if K.compare k0 sk2 <= 0 then add kp0 t >< t' else t >< add kp0 t'
-    | T (kp1, sk1, NdR (kp2, t1, sk2, t2, _)) ->
-        let t = T (kp1, sk2, t1) and t' = T (kp2, sk1, t2) in
-        if K.compare k0 sk2 <= 0 then add kp0 t >< t' else t >< add kp0 t'
+    N -> sg kp0
+  | T ((k, _), _, Lf) as t ->
+      let t0 = sg kp0 and c = K.compare k0 k in
+      if c < 0 then t0 >|< t else if c > 0 then t >|< t0 else t0
+  | T (kp1, sk1, NdL (kp2, t1, sk2, t2, _)) ->
+      let t = T (kp2, sk2, t1) and t' = T (kp1, sk1, t2) in
+      if K.compare k0 sk2 <= 0 then add kp0 t >< t' else t >< add kp0 t'
+  | T (kp1, sk1, NdR (kp2, t1, sk2, t2, _)) ->
+      let t = T (kp1, sk2, t1) and t' = T (kp2, sk1, t2) in
+      if K.compare k0 sk2 <= 0 then add kp0 t >< t' else t >< add kp0 t'
 
   let remove k0 t =
     let rec go k0 t = match view t with
-      | Binv (t1, sk, t2) ->
-          if K.compare k0 sk <= 0 then go k0 t1 >< t2 else t1 >< go k0 t2
-      | Sgv (k, _) when K.compare k k0 = 0 -> N
-      | Sgv _ | Nv -> raise_notrace Exit in
+      Binv (t1, sk, t2) ->
+        if K.compare k0 sk <= 0 then go k0 t1 >< t2 else t1 >< go k0 t2
+    | Sgv (k, _) when K.compare k k0 = 0 -> N
+    | Sgv _ | Nv -> raise_notrace Exit in
     try go k0 t with Exit -> t
 
   let adjust f k0 t =
     let rec go f k0 t = match view t with
-      | Binv (t1, sk, t2) ->
-          if K.compare k0 sk <= 0 then go f k0 t1 >|< t2 else t1 >|< go f k0 t2
-      | Sgv (k, p) when K.compare k k0 = 0 -> sg (k, f p)
-      | Sgv _ | Nv -> raise_notrace Exit in
+      Binv (t1, sk, t2) ->
+        if K.compare k0 sk <= 0 then go f k0 t1 >|< t2 else t1 >|< go f k0 t2
+    | Sgv (k, p) when K.compare k k0 = 0 -> sg (k, f p)
+    | Sgv _ | Nv -> raise_notrace Exit in
     try go f k0 t with Exit -> t
 
   let rec filter pf t = match view t with
-    | Nv -> N
-    | Sgv (k, p as kp) -> if pf k p then sg kp else N
-    | Binv (t1, _, t2) -> filter pf t1 >< filter pf t2
+    Nv -> N
+  | Sgv (k, p as kp) -> if pf k p then sg kp else N
+  | Binv (t1, _, t2) -> filter pf t1 >< filter pf t2
 
   let rec partition pf t = match view t with
-    | Nv -> (N, N)
-    | Sgv (k, p as kp) -> if pf k p then (sg kp, N) else (N, sg kp)
-    | Binv (t1, _, t2) ->
-        let (y1, n1) = partition pf t1
-        and (y2, n2) = partition pf t2 in
-        (y1 >< y2, n1 >< n2)
+    Nv -> (N, N)
+  | Sgv (k, p as kp) -> if pf k p then (sg kp, N) else (N, sg kp)
+  | Binv (t1, _, t2) ->
+      let (y1, n1) = partition pf t1
+      and (y2, n2) = partition pf t2 in
+      (y1 >< y2, n1 >< n2)
 
 
   let of_sorted_list xs =
     let rec go n = function
-      | []        -> N
-      | [x]       -> sg x
-      | [x;y]     -> sg x >|< sg y
-      | [x;y;z]   -> (sg x >|< sg y) >|< sg z
-      | [x;y;z;w] -> (sg x >|< sg y) >|< (sg z >|< sg w)
-      | xs -> let m = n / 2 in go m L.(take m xs) >|< go (n - m) L.(drop m xs)
-    in go (L.length xs) xs
+      []        -> N
+    | [x]       -> sg x
+    | [x;y]     -> sg x >|< sg y
+    | [x;y;z]   -> (sg x >|< sg y) >|< sg z
+    | [x;y;z;w] -> (sg x >|< sg y) >|< (sg z >|< sg w)
+    | xs -> let m = n / 2 in go m L.(take m xs) >|< go (n - m) L.(drop m xs) in
+    go (L.length xs) xs
 
   let of_list xs =
     let cmp (k1, _) (k2, _) = K.compare k1 k2 in
@@ -298,27 +299,27 @@ S with type k = K.t and type p = P.t = struct
 
   let depth t =
     let rec go = function
-      | Lf -> 0
-      | NdL (_, t1, _, t2, _) | NdR (_, t1, _, t2, _) ->
-          max (go t1) (go t2) + 1 in
+      Lf -> 0
+    | NdL (_, t1, _, t2, _) | NdR (_, t1, _, t2, _) ->
+        max (go t1) (go t2) + 1 in
     match t with N -> 0 | T (_, _, t) -> go t + 1
 
   let pp ?(sep = Format.pp_print_space) pp ppf t =
     let rec go pk0 cont ppf = function
-      | Lf -> pf ppf "@[%a@]" pp pk0; if cont then sep ppf ()
-      | NdL (pk, t1, _, t2, _) -> go pk  true ppf t1; go pk0 cont ppf t2
-      | NdR (pk, t1, _, t2, _) -> go pk0 true ppf t1; go pk  cont ppf t2 in
+      Lf -> pf ppf "@[%a@]" pp pk0; if cont then sep ppf ()
+    | NdL (pk, t1, _, t2, _) -> go pk  true ppf t1; go pk0 cont ppf t2
+    | NdR (pk, t1, _, t2, _) -> go pk0 true ppf t1; go pk  cont ppf t2 in
     match t with N -> () | T (pk, _, t) -> pf ppf "@[%a@]" (go pk false) t
 
   let pp_dump ppk ppp ppf t =
     let rec go ppf = function
-      | Lf -> Format.pp_print_string ppf "*"
-      | NdL ((k, p), t1, sk, t2, w)
-      | NdR ((k, p), t1, sk, t2, w) ->
-          pf ppf "  @[<v>%a@]@,%a/%a -> %a #%d@,  @[<v>%a@]"
-            go t1 ppk k ppk sk ppp p w go t2 in
+      Lf -> Format.pp_print_string ppf "*"
+    | NdL ((k, p), t1, sk, t2, w)
+    | NdR ((k, p), t1, sk, t2, w) ->
+        pf ppf "  @[<v>%a@]@,%a/%a -> %a #%d@,  @[<v>%a@]"
+          go t1 ppk k ppk sk ppp p w go t2 in
     match t with
-    | N -> ()
+      N -> ()
     | T ((k, p), sk, t1) ->
         pf ppf "%a/%a -> %a@,  @[<v>%a@]" ppk k ppk sk ppp p go t1
 end
