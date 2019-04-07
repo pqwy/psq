@@ -19,7 +19,8 @@ module type S = sig
   val find : k -> t -> p option
   val add : k -> p -> t -> t
   val remove : k -> t -> t
-  val adjust: (p -> p) -> k -> t -> t
+  val adjust : (p -> p) -> k -> t -> t
+  val update : k -> (p option -> p option) -> t -> t
   val min : t -> (k * p) option
   val rest : t -> t option
   val pop : t -> ((k * p) * t) option
@@ -86,8 +87,8 @@ struct
   let outweighs s1 s2 = s1 * 100 > s2 * 375
 
   let (@<=@) (k1, p1) (k2, p2) =
-    let c = P.compare p1 p2 in
-    if c = 0 then K.compare k1 k2 <= 0 else c < 0 [@@inline]
+    match P.compare p1 p2 with 0 -> K.compare k1 k2 <= 0 | c -> c < 0
+  [@@inline]
 
   let rot_l kp1 t1 sk1 = function
     NdL (kp2, t2, sk2, t3, _) when kp1 @<=@ kp2 ->
@@ -193,19 +194,15 @@ struct
   let seq_at_most p0 t () =
     foldr_at_most p0 (fun kp seq -> Seq.Cons (kp, seq)) t Seq.empty
 
-  (* XXX FIXME:
-     Splitting the pennant while going down. Make add/remove/adjust work on bare
-     trees to avoid thrashing the GC during traversal. *)
+  (* type view = Nv | Sgv of (k * p) | Binv of t * K.t * t *)
 
-  type view = Nv | Sgv of (k * p) | Binv of t * K.t * t
-
-  let view = function
-    N -> Nv
-  | T (kp, _, Lf) -> Sgv kp
-  | T (kp1, sk1, NdL (kp2, t1, sk2, t2, _)) ->
-      Binv (T (kp2, sk2, t1), sk2, T (kp1, sk1, t2))
-  | T (kp1, sk1, NdR (kp2, t1, sk2, t2, _)) ->
-      Binv (T (kp1, sk2, t1), sk2, T (kp2, sk1, t2))
+  (* let view = function *)
+  (*   N -> Nv *)
+  (* | T (kp, _, Lf) -> Sgv kp *)
+  (* | T (kp1, sk1, NdL (kp2, t1, sk2, t2, _)) -> *)
+  (*     Binv (T (kp2, sk2, t1), sk2, T (kp1, sk1, t2)) *)
+  (* | T (kp1, sk1, NdR (kp2, t1, sk2, t2, _)) -> *)
+  (*     Binv (T (kp1, sk2, t1), sk2, T (kp2, sk1, t2)) *)
 
   (* let rec add (k0, _ as kp0) t = match view t with *)
   (*   | Nv -> sg kp0 *)
@@ -215,48 +212,62 @@ struct
   (*   | Binv (t1, sk, t2) -> *)
   (*       if K.compare k0 sk <= 0 then add kp0 t1 >< t2 else t1 >< add kp0 t2 *)
 
-  (* XXX This hand-inlining of [view] is just sad. *)
-  let rec add (k0, _ as kp0) = function
-    N -> sg kp0
-  | T ((k, _), _, Lf) as t ->
-      let t0 = sg kp0 and c = K.compare k0 k in
-      if c < 0 then t0 >|< t else if c > 0 then t >|< t0 else t0
-  | T (kp1, sk1, NdL (kp2, t1, sk2, t2, _)) ->
-      let t = T (kp2, sk2, t1) and t' = T (kp1, sk1, t2) in
-      if K.compare k0 sk2 <= 0 then add kp0 t >< t' else t >< add kp0 t'
-  | T (kp1, sk1, NdR (kp2, t1, sk2, t2, _)) ->
-      let t = T (kp1, sk2, t1) and t' = T (kp2, sk1, t2) in
-      if K.compare k0 sk2 <= 0 then add kp0 t >< t' else t >< add kp0 t'
+  (* let remove k0 t = *)
+  (*   let rec go k0 t = match view t with *)
+  (*     Binv (t1, sk, t2) -> *)
+  (*       if K.compare k0 sk <= 0 then go k0 t1 >< t2 else t1 >< go k0 t2 *)
+  (*   | Sgv (k, _) when K.compare k k0 = 0 -> N *)
+  (*   | Sgv _ | Nv -> raise_notrace Exit in *)
+  (*   try go k0 t with Exit -> t *)
 
-  let remove k0 t =
-    let rec go k0 t = match view t with
-      Binv (t1, sk, t2) ->
-        if K.compare k0 sk <= 0 then go k0 t1 >< t2 else t1 >< go k0 t2
-    | Sgv (k, _) when K.compare k k0 = 0 -> N
-    | Sgv _ | Nv -> raise_notrace Exit in
-    try go k0 t with Exit -> t
+  (* let adjust f k0 t = *)
+  (*   let rec go f k0 t = match view t with *)
+  (*     Binv (t1, sk, t2) -> *)
+  (*       if K.compare k0 sk <= 0 then go f k0 t1 >|< t2 else t1 >|< go f k0 t2 *)
+  (*   | Sgv (k, p) when K.compare k k0 = 0 -> sg (k, f p) *)
+  (*   | Sgv _ | Nv -> raise_notrace Exit in *)
+  (*   try go f k0 t with Exit -> t *)
 
-  let adjust f k0 t =
-    let rec go f k0 t = match view t with
-      Binv (t1, sk, t2) ->
-        if K.compare k0 sk <= 0 then go f k0 t1 >|< t2 else t1 >|< go f k0 t2
-    | Sgv (k, p) when K.compare k k0 = 0 -> sg (k, f p)
-    | Sgv _ | Nv -> raise_notrace Exit in
-    try go f k0 t with Exit -> t
+  (* let rec filter pf t = match view t with *)
+  (*   Nv -> N *)
+  (* | Sgv (k, p as kp) -> if pf k p then sg kp else N *)
+  (* | Binv (t1, _, t2) -> filter pf t1 >< filter pf t2 *)
 
-  let rec filter pf t = match view t with
-    Nv -> N
-  | Sgv (k, p as kp) -> if pf k p then sg kp else N
-  | Binv (t1, _, t2) -> filter pf t1 >< filter pf t2
+  let update k0 f t =
+    let node f k0 kp = match f kp with
+      Some p -> sg (k0, p) | None -> N [@@inline] in
+    let rec go k0 f kp1 sk1 = function
+      Lf ->
+        let c = K.compare k0 (fst kp1) in
+        if c = 0 then node f k0 (Some (snd kp1)) else
+        ( match node f k0 None with
+            N -> raise_notrace Exit
+          | t -> if c < 0 then t >|< sg kp1 else sg kp1 >|< t )
+    | NdL (kp2, t1, sk2, t2, _) ->
+        if K.compare k0 sk2 <= 0 then
+          go k0 f kp2 sk2 t1 >< T (kp1, sk1, t2)
+        else T (kp2, sk2, t1) >< go k0 f kp1 sk1 t2
+    | NdR (kp2, t1, sk2, t2, _) ->
+        if K.compare k0 sk2 <= 0 then
+          go k0 f kp1 sk2 t1 >< T (kp2, sk1, t2)
+        else T (kp1, sk2, t1) >< go k0 f kp2 sk1 t2 in
+    match t with
+      N -> node f k0 None
+    | T (kp, sk, t1) -> try go k0 f kp sk t1 with Exit -> t
 
-  let rec partition pf t = match view t with
-    Nv -> (N, N)
-  | Sgv (k, p as kp) -> if pf k p then (sg kp, N) else (N, sg kp)
-  | Binv (t1, _, t2) ->
-      let (y1, n1) = partition pf t1
-      and (y2, n2) = partition pf t2 in
-      (y1 >< y2, n1 >< n2)
+  let add k p t = update k (fun _ -> Some p) t
+  let remove k t = update k (fun _ -> None) t
+  let adjust f k t = update k (function Some p -> Some (f p) | _ -> None) t
 
+  let filter pf t =
+    let rec go pf kp1 sk1 = function
+      Lf -> if pf (fst kp1) (snd kp1) then sg kp1 else N
+    | NdL (kp2, t1, sk2, t2, _) -> go pf kp2 sk2 t1 >< go pf kp1 sk1 t2
+    | NdR (kp2, t1, sk2, t2, _) -> go pf kp1 sk2 t1 >< go pf kp2 sk1 t2 in
+    match t with N -> N | T (kp, sk, t) -> go pf kp sk t
+
+
+  let partition pf t = (filter pf t, filter (fun k p -> not (pf k p)) t)
 
   let of_sorted_list xs =
     let rec go n = function
@@ -294,7 +305,6 @@ struct
   let to_list t = foldr (fun kp xs -> kp :: xs ()) t nil
   let to_seq t () = foldr (fun kp xs -> Seq.Cons (kp, xs)) t Seq.empty
 
-  let add k p = add (k, p)
   let sg k p = sg (k, p)
 
   let depth t =

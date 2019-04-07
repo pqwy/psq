@@ -71,9 +71,18 @@ module type S = sig
   (** [remove k t] is [t] without the binding for [k], or [t], if [k] is not
       bound in [t]. *)
 
-  val adjust: (p -> p) -> k -> t -> t
+  val adjust : (p -> p) -> k -> t -> t
   (** [adjust f k t] is [t] with the binding [k -> p] replaced by [k -> f p].
       When [k] is not bound in [t], the result is [t]. *)
+
+  val update : k -> (p option -> p option) -> t -> t
+  (** [update k f t] is [t] with the binding for [k] given by [f].
+
+      When [t] contains a binding [k -> p], the new binding is given by
+      [f (Some p)]; otherwise, by [f None].
+
+      When the result of applying [f] is [Some p'], the binding [k -> p'] is
+      added to [t]; otherwise, the binding for [k] is removed from [t]. *)
 
   (** {1 Access by min [p]} *)
 
