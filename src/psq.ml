@@ -282,12 +282,11 @@ struct
     | xs -> let m = n / 2 in go m L.(take m xs) >|< go (n - m) L.(drop m xs) in
     go (L.length xs) xs
 
-  let of_list xs =
-    let cmp (k1, _) (k2, _) = K.compare k1 k2 in
-    List.sort_uniq cmp xs |> of_sorted_list
+  let cmp_k (k1, _) (k2, _) = K.compare k1 k2
 
-  (* XXX List.of_seq can avoid reversing the list, but needs 4.7. *)
-  let of_seq xs = Seq.fold_left (fun xs a -> a::xs) [] xs |> List.rev |> of_list
+  let of_list xs = Psq_list.sort_uniq cmp_k xs |> of_sorted_list
+
+  let of_seq xs = Seq.fold_left (fun xs a -> a::xs) [] xs |> of_list
 
   let add_seq xs q = Seq.fold_left (fun q (k, p) -> add k p q) q xs
 

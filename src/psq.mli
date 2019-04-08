@@ -118,8 +118,9 @@ module type S = sig
 
   val of_list : (k * p) list -> t
   (** [of_list kps] is [t] with bindings [kps].
-      When there are multiple bindings for a given [k], it is unspecified which
-      one is chosen. *)
+
+      When there are multiple bindings for a given [k], the rightmost binding is
+      chosen. *)
 
   val of_sorted_list : (k * p) list -> t
   (** [of_sorted_list kps] is [t] with bindings [kps].
@@ -128,9 +129,7 @@ module type S = sig
       repetitions. When this is not the case, the result is undefined. *)
 
   val of_seq : (k * p) Seq.t -> t
-  (** [of_seq kps] builds [t] from bindings [kps].
-      When there are multiple bindings for a given [k], it is unspecified which
-      one is chosen. *)
+  (** [of_seq kps] is [of_list (List.of_seq kps)]. *)
 
   val add_seq : (k * p) Seq.t -> t -> t
   (** [of_seq kps t] is [t ++ of_seq kps]. *)
