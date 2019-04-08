@@ -140,14 +140,13 @@ struct
       if kp1 @<=@ kp2 then
         T (kp1, sk2, nd_bal kp2 t1 sk1 t2)
       else T (kp2, sk2, nd_bal kp1 t1 sk1 t2)
+  [@@inline]
 
-  (* XXX repetition, parameterise (w/ inlining) *)
-  let (>|<) t1 t2 = match (t1, t2) with
-    (N, t) | (t, N) -> t
-  | (T (kp1, sk1, t1), T (kp2, sk2, t2)) ->
-      if kp1 @<=@ kp2 then
-        T (kp1, sk2, nd_r kp2 t1 sk1 t2)
-      else T (kp2, sk2, nd_l kp1 t1 sk1 t2)
+  let (>|<) (k1, _ as kp1) (k2, _ as kp2) =
+    if kp1 @<=@ kp2 then
+      T (kp1, k2, NdR (kp2, Lf, k1, Lf, 1))
+    else T (kp2, k2, NdL (kp1, Lf, k1, Lf, 1))
+  [@@inline]
 
   let rec promote sk0 = function
     Lf -> N
@@ -237,15 +236,15 @@ struct
   (* | Binv (t1, _, t2) -> filter pf t1 >< filter pf t2 *)
 
   let update k0 f t =
-    let node f k0 kp = match f kp with
+    let node f k0 p = match f p with
       Some p -> sg (k0, p) | None -> N [@@inline] in
     let rec go k0 f kp1 sk1 = function
       Lf ->
         let c = K.compare k0 (fst kp1) in
         if c = 0 then node f k0 (Some (snd kp1)) else
-        ( match node f k0 None with
-            N -> raise_notrace Exit
-          | t -> if c < 0 then t >|< sg kp1 else sg kp1 >|< t )
+        ( match f None with
+            Some p -> if c < 0 then (k0, p) >|< kp1 else kp1 >|< (k0, p)
+          | None   -> raise_notrace Exit )
     | NdL (kp2, t1, sk2, t2, _) ->
         if K.compare k0 sk2 <= 0 then
           go k0 f kp2 sk2 t1 >< T (kp1, sk1, t2)
@@ -276,10 +275,10 @@ struct
     let rec go n = function
       []        -> N
     | [x]       -> sg x
-    | [x;y]     -> sg x >|< sg y
-    | [x;y;z]   -> (sg x >|< sg y) >|< sg z
-    | [x;y;z;w] -> (sg x >|< sg y) >|< (sg z >|< sg w)
-    | xs -> let m = n / 2 in go m L.(take m xs) >|< go (n - m) L.(drop m xs) in
+    | [x;y]     -> x >|< y
+    | [x;y;z]   -> (x >|< y) >< sg z
+    | [x;y;z;w] -> (x >|< y) >< (z >|< w)
+    | xs -> let m = n / 2 in go m L.(take m xs) >< go (n - m) L.(drop m xs) in
     go (L.length xs) xs
 
   let cmp_k (k1, _) (k2, _) = K.compare k1 k2

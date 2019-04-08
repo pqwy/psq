@@ -44,13 +44,22 @@ let runs ((module M: S)) size =
   ; bench "add" (fun () -> let k = Random.int size + 1 in M.add k k q')
   ; bench "remove" (fun () -> M.remove (Random.int size) q)
   ]
+
 let runs1 size =
   let xs = r_bindings size in
+  let q = Q.of_list xs in
   group (Fmt.strf "x%d" size) [
-    bench "of_sorted_list" (fun () -> Q.of_sorted_list xs)
-  ; bench "of_list" (fun () -> Q.of_list xs)
-  ; bench "of_seq" (fun () -> Q.of_seq (List.to_seq xs))
-  ; bench "add_seq" (fun () -> Q.(add_seq (List.to_seq xs) empty))
+    group "of_" [
+      bench "of_sorted_list" (fun () -> Q.of_sorted_list xs)
+    ; bench "of_list" (fun () -> Q.of_list xs)
+    ; bench "of_seq" (fun () -> Q.of_seq (List.to_seq xs))
+    ; bench "add_seq" (fun () -> Q.(add_seq (List.to_seq xs) empty))
+    ];
+    group "to_" [
+      bench "to_p_list" (fun () -> Q.to_priority_list q)
+    ; bench "to_seq" (fun () -> Q.to_seq q |> Seq.iter ignore)
+    ; bench "to_list" (fun () -> Q.to_list q)
+    ]
   ]
 
 let arg = Cmdliner.Arg.(
