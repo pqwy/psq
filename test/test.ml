@@ -111,7 +111,7 @@ let () = Alcotest.run "psq" [
   "adjust", [
     test "sem" psq_w_any_key
       (fun (q, x) ->
-        Q.(to_list (adjust succ x q)) =
+        Q.(to_list (adjust x succ q)) =
           List.map (fun (k, p) -> (k, if k = x then succ p else p))
             (Q.to_list q));
   ];

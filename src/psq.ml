@@ -20,7 +20,7 @@ module type S = sig
   val find : k -> t -> p option
   val add : k -> p -> t -> t
   val remove : k -> t -> t
-  val adjust : (p -> p) -> k -> t -> t
+  val adjust : k -> (p -> p) -> t -> t
   val update : k -> (p option -> p option) -> t -> t
   val min : t -> (k * p) option
   val rest : t -> t option
@@ -223,7 +223,7 @@ struct
   (*   | Sgv _ | Nv -> raise_notrace Exit in *)
   (*   try go k0 t with Exit -> t *)
 
-  (* let adjust f k0 t = *)
+  (* let adjust k0 f t = *)
   (*   let rec go f k0 t = match view t with *)
   (*     Binv (t1, sk, t2) -> *)
   (*       if K.compare k0 sk <= 0 then go f k0 t1 >|< t2 else t1 >|< go f k0 t2 *)
@@ -260,7 +260,7 @@ struct
 
   let add k p t = update k (fun _ -> Some p) t
   let remove k t = update k (fun _ -> None) t
-  let adjust f k t = update k (function Some p -> Some (f p) | _ -> None) t
+  let adjust k f t = update k (function Some p -> Some (f p) | _ -> None) t
 
   let filter pf t =
     let rec go pf kp1 sk1 = function

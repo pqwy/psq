@@ -74,8 +74,8 @@ module type S = sig
   (** [remove k t] is [t] without the binding for [k], or [t], if [k] is not
       bound in [t]. *)
 
-  val adjust : (p -> p) -> k -> t -> t
-  (** [adjust f k t] is [t] with the binding [k -> p] replaced by [k -> f p].
+  val adjust : k -> (p -> p) -> t -> t
+  (** [adjust k f t] is [t] with the binding [k -> p] replaced by [k -> f p].
       When [k] is not bound in [t], the result is [t]. *)
 
   val update : k -> (p option -> p option) -> t -> t
