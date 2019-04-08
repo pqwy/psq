@@ -48,6 +48,9 @@ module type S = sig
   (** [sg k p] is the singleton search queue, containing only the
       binding [k -> p]. *)
 
+  val (++) : t -> t -> t
+  (** [t1 ++ t2] adds bindings in [t2] to [t1]. *)
+
   val is_empty : t -> bool
   (** [is_empty t] is [true] iff [t] is {{!empty}[empty]}. *)
 
@@ -111,28 +114,7 @@ module type S = sig
   (** [iter_at_most p0 f q] is the sequence of bindings [k -> p] where [p] not
       larger than [p0], in key-ascending order. *)
 
-  (** {1 Aggregate access} *)
-
-  val fold : (k -> p -> 'a -> 'a) -> 'a -> t -> 'a
-  (** [fold f z t] is [f k0 p0 (f k1 p1 ... (f kn pn z))]. Bindings are folded
-      over in key-ascending order. *)
-
-  val filter : (k -> p -> bool) -> t -> t
-  (** [filter p t] is the search queue with exactly the bindings in [t] which
-      satisfy the predicate [p]. *)
-
-  val partition : (k -> p -> bool) -> t -> t * t
-  (** [partition p t] splits [t] into [(t1, t2)], where [t1] contains the
-      bindings in [t] which satisfy the predicate [p], and [t2] contains those
-      that don't. *)
-
-  val iter : (k -> p -> unit) -> t -> unit
-  (** [iter f t] applies [f] to all bindings in [t] in key-ascending order. *)
-
-  (** {1 Conversions} *)
-
-  val to_list : t -> (k * p) list
-  (** [to_list t] are all the bindings in [t] in key-ascending order. *)
+  (** {1 Aggregate construction} *)
 
   val of_list : (k * p) list -> t
   (** [of_list kps] is [t] with bindings [kps].
@@ -145,15 +127,40 @@ module type S = sig
       [kps] must contain the bindings in key-ascending order without
       repetitions. When this is not the case, the result is undefined. *)
 
-  (** {6 Iterators} *)
-
-  val to_seq : t -> (k * p) Seq.t
-  (** [to_seq t] iterates over all bindings in [t] in key-ascending order. *)
-
   val of_seq : (k * p) Seq.t -> t
   (** [of_seq kps] builds [t] from bindings [kps].
       When there are multiple bindings for a given [k], it is unspecified which
       one is chosen. *)
+
+  val add_seq : (k * p) Seq.t -> t -> t
+  (** [of_seq kps t] is [t ++ of_seq kps]. *)
+
+  (** {1 Whole-structure access} *)
+
+  val to_list : t -> (k * p) list
+  (** [to_list t] are all the bindings in [t] in key-ascending order. *)
+
+  val to_seq : t -> (k * p) Seq.t
+  (** [to_seq t] iterates over bindings in [t] in key-ascending order. *)
+
+  val to_priority_seq : t -> (k * p) Seq.t
+  (** [to_priority_seq t] iterates over bindings in [t] in priority-ascending
+      order. *)
+
+  val fold : (k -> p -> 'a -> 'a) -> 'a -> t -> 'a
+  (** [fold f z t] is [f k0 p0 (f k1 p1 ... (f kn pn z))]. Bindings are folded
+      over in key-ascending order. *)
+
+  val iter : (k -> p -> unit) -> t -> unit
+  (** [iter f t] applies [f] to all bindings in [t] in key-ascending order. *)
+
+  val filter : (k -> p -> bool) -> t -> t
+  (** [filter p t] is the search queue with exactly the bindings in [t] which
+      satisfy the predicate [p]. *)
+
+  val partition : (k -> p -> bool) -> t -> t * t
+  (** [partition p t] is [(filter p t, filter np t)] where [np] is the negation
+      of [p]. *)
 
   (** {1 Pretty-printing} *)
 
@@ -162,15 +169,17 @@ module type S = sig
   val pp : ?sep:(formatter -> unit -> unit) -> (formatter -> k * p -> unit) ->
            formatter -> t -> unit
   (** [pp ?sep pp_kp ppf t] pretty-prints [t] to [ppf], using [pp_kp] to print
-      the bindings and [~sep] to separate them. [~sep] defaults to
-      {!Format.print_space}. *)
+      the bindings and [~sep] to separate them.
 
-  (**/**)
+      [~sep] defaults to {!Format.print_space}. *)
 
-  (* Debug. *)
-  val depth : t -> int
   val pp_dump : (formatter -> k -> unit) -> (formatter -> p -> unit) ->
                 formatter -> t -> unit
+  (** [pp_dump pp_k pp_f ppf t] is a handier pretty-printer for development. *)
+
+  (**/**)
+  (* Debug. *)
+  val depth : t -> int
   (**/**)
 end
 

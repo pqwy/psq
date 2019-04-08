@@ -14,6 +14,8 @@ let permutation n =
   shuffle arr;
   Array.to_list arr
 
+let r_bindings n = permutation n |> List.rev_map (fun x -> x, x)
+
 module type S = sig
   type t
   val add     : int -> int -> t -> t
@@ -22,7 +24,8 @@ module type S = sig
   val of_list : (int * int) list -> t
 end
 module I = struct type t = int let compare (a: int) b = compare a b end
-let q = (module Psq.Make (I) (I): S)
+module Q = Psq.Make (I)(I)
+let q = (module Q: S)
 let m = (module struct
   module M = Map.Make (I)
   type t = int M.t
@@ -33,17 +36,28 @@ end: S)
 open Unmark
 
 let runs ((module M: S)) size =
-  let xs = permutation size |> List.map (fun x -> x, x) in
+  let xs = r_bindings size in
   let q  = M.of_list xs
-  and q' = List.map (fun (k, p) -> (k * 2, p * 2)) xs |> M.of_list in
+  and q' = List.rev_map (fun (k, p) -> (k * 2, p * 2)) xs |> M.of_list in
   group (Fmt.strf "x%d" size) [
     bench "find" (fun () -> M.find (Random.int size) q)
   ; bench "add" (fun () -> let k = Random.int size + 1 in M.add k k q')
   ; bench "remove" (fun () -> M.remove (Random.int size) q)
   ]
+let runs1 size =
+  let xs = r_bindings size in
+  group (Fmt.strf "x%d" size) [
+    bench "of_sorted_list" (fun () -> Q.of_sorted_list xs)
+  ; bench "of_list" (fun () -> Q.of_list xs)
+  ; bench "of_seq" (fun () -> Q.of_seq (List.to_seq xs))
+  ; bench "add_seq" (fun () -> Q.(add_seq (List.to_seq xs) empty))
+  ]
 
-let _ = Unmark_cli.main "psq" [
+let arg = Cmdliner.Arg.(
+  value @@ opt (list int) [10; 100; 1000] @@ info ["sizes"])
+let _ = Unmark_cli.main_ext "psq" ~arg @@ fun ns -> [
     bench "Random.int" (fun () -> Random.int 1000)
-  ; group "map" [runs m 10; runs m 100; runs m 1000]
-  ; group "psq" [runs q 10; runs q 100; runs q 1000]
+  ; group "map" (List.map (runs m) ns)
+  ; group "psq" (List.map (runs q) ns)
+  ; group "psq1" (List.map runs1 ns)
 ]

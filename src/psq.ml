@@ -13,6 +13,7 @@ module type S = sig
   type p
   val empty : t
   val sg : k -> p -> t
+  val (++) : t -> t -> t
   val is_empty : t -> bool
   val size : t -> int
   val mem : k -> t -> bool
@@ -27,18 +28,20 @@ module type S = sig
   val fold_at_most : p -> (k -> p -> 'a -> 'a) -> 'a -> t -> 'a
   val iter_at_most : p -> (k -> p -> unit) -> t -> unit
   val seq_at_most : p -> t -> (k * p) Seq.t
-  val fold : (k -> p -> 'a -> 'a) -> 'a -> t -> 'a
-  val filter : (k -> p -> bool) -> t -> t
-  val partition : (k -> p -> bool) -> t -> t * t
-  val iter : (k -> p -> unit) -> t -> unit
-  val to_list : t -> (k * p) list
   val of_list : (k * p) list -> t
   val of_sorted_list : (k * p) list -> t
-  val to_seq : t -> (k * p) Seq.t
   val of_seq : (k * p) Seq.t -> t
+  val add_seq : (k * p) Seq.t -> t -> t
+  val to_list : t -> (k * p) list
+  val to_seq : t -> (k * p) Seq.t
+  val to_priority_seq : t -> (k * p) Seq.t
+  val fold : (k -> p -> 'a -> 'a) -> 'a -> t -> 'a
+  val iter : (k -> p -> unit) -> t -> unit
+  val filter : (k -> p -> bool) -> t -> t
+  val partition : (k -> p -> bool) -> t -> t * t
   val pp : ?sep:(unit fmt) -> (k * p) fmt -> t fmt
-  val depth : t -> int
   val pp_dump : k fmt -> p fmt -> t fmt
+  val depth : t -> int
 end
 
 module L = struct
@@ -286,6 +289,8 @@ struct
   (* XXX List.of_seq can avoid reversing the list, but needs 4.7. *)
   let of_seq xs = Seq.fold_left (fun xs a -> a::xs) [] xs |> List.rev |> of_list
 
+  let add_seq xs q = Seq.fold_left (fun q (k, p) -> add k p q) q xs
+
   let iter f t =
     let rec go (p0, k0 as pk0) f = function
       Lf -> f p0 k0
@@ -293,17 +298,41 @@ struct
     | NdR (pk, t1, _, t2, _) -> go pk0 f t1; go pk f t2 in
     match t with N -> () | T (pk, _, t) -> go pk f t
 
-  let foldr f t z =
+  let foldr f z t =
+    let rec go kp0 f z = function
+      Lf -> f kp0 z
+    | NdL (kp, t1, _, t2, _) -> go kp f (go kp0 f z t2) t1
+    | NdR (kp, t1, _, t2, _) -> go kp0 f (go kp f z t2) t1 in
+    match t with N -> z | T (kp, _, t) -> go kp f z t
+
+  let lfoldr f t z =
     let rec go kp0 f z = function
       Lf -> f kp0 z
     | NdL (kp, t1, _, t2, _) -> go kp f (fun () -> go kp0 f z t2) t1
     | NdR (kp, t1, _, t2, _) -> go kp0 f (fun () -> go kp f z t2) t1 in
     match t with T (kp, _, t) -> go kp f z t | N -> z ()
 
-  let nil () = []
-  let fold f z t = foldr (fun (k, p) z -> f k p (z ())) t (fun () -> z)
-  let to_list t = foldr (fun kp xs -> kp :: xs ()) t nil
-  let to_seq t () = foldr (fun kp xs -> Seq.Cons (kp, xs)) t Seq.empty
+  let (++) q1 q2 = foldr (fun (k, p) q -> add k p q) q1 q2
+  let fold f z t = foldr (fun (k, p) z -> f k p z) z t
+  let to_list t = foldr (fun kp xs -> kp :: xs) [] t
+  let to_seq t () = lfoldr (fun kp xs -> Seq.Cons (kp, xs)) t Seq.empty
+
+  let rec merge n1 n2 = Seq.(match n1, n2 with
+    Nil, s | s, Nil -> s
+  | Cons (x, xt), Cons (y, yt) ->
+      if x @<=@ y then
+        Cons (x, fun () -> merge (xt ()) n2)
+      else Cons (y, fun () -> merge n1 (yt ())))
+
+  let to_priority_seq t () =
+    let open Seq in
+    let rec go = function
+      Lf -> Nil
+    | NdL (kp2, t1, _, t2, _) ->
+        merge (Cons (kp2, fun () -> go t1)) (go t2)
+    | NdR (kp2, t1, _, t2, _) ->
+        merge (go t1) (Cons (kp2, fun () -> go t2)) in
+    match t with N -> Nil | T (kp, _, t) -> Cons (kp, fun () -> go t)
 
   let sg k p = sg (k, p)
 
@@ -315,21 +344,14 @@ struct
     match t with N -> 0 | T (_, _, t) -> go t + 1
 
   let pp ?(sep = Format.pp_print_space) pp ppf t =
-    let rec go pk0 cont ppf = function
-      Lf -> pf ppf "@[%a@]" pp pk0; if cont then sep ppf ()
-    | NdL (pk, t1, _, t2, _) -> go pk  true ppf t1; go pk0 cont ppf t2
-    | NdR (pk, t1, _, t2, _) -> go pk0 true ppf t1; go pk  cont ppf t2 in
-    match t with N -> () | T (pk, _, t) -> pf ppf "@[%a@]" (go pk false) t
+    let first = ref true in
+    let k ppf = iter @@ fun k p ->
+      ( match !first with true -> first := false | _ -> sep ppf ());
+      pp ppf (k, p) in
+    pf ppf "@[%a@]" k t
 
-  let pp_dump ppk ppp ppf t =
-    let rec go ppf = function
-      Lf -> Format.pp_print_string ppf "*"
-    | NdL ((k, p), t1, sk, t2, w)
-    | NdR ((k, p), t1, sk, t2, w) ->
-        pf ppf "  @[<v>%a@]@,%a/%a -> %a #%d@,  @[<v>%a@]"
-          go t1 ppk k ppk sk ppp p w go t2 in
-    match t with
-      N -> ()
-    | T ((k, p), sk, t1) ->
-        pf ppf "%a/%a -> %a@,  @[<v>%a@]" ppk k ppk sk ppp p go t1
+  let pp_dump ppk ppp ppf =
+    let sep ppf () = pf ppf ";@ "
+    and ppkp ppf (k, p) = pf ppf "(@[%a,@ %a@])" ppk k ppp p in
+    pf ppf "of_sorted_list [%a]" (pp ~sep ppkp)
 end
