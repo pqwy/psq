@@ -21,7 +21,14 @@ let sorted_by_k xs = List.sort cmp_k xs
 let sorted_by_p = List.sort @@ fun b1 b2 ->
   match cmp_p b1 b2 with 0 -> cmp_k b1 b2 | x -> x
 
-let (=~=) q1 q2 = Q.to_list q1 = Q.to_list q2
+let balanced q =
+  let (n, d) = Q.(size q, depth q) in
+  n <= 1 || float d < log (float n) *. log 10. *. 3.75
+
+let (!) q = `Sem Q.(to_list q, to_priority_list q, size q)
+let sem xs =
+  let xs = sort_uniq_r cmp_k xs in
+  `Sem (xs, sorted_by_p xs, List.length xs)
 
 let size = QCheck.Gen.(small_nat >|= fun x -> x mod 1_000)
 let bindings = QCheck.(
@@ -33,40 +40,28 @@ let psq = QCheck.(
     set_print Fmt.(to_to_string (Q.pp_dump int int)))
 let psq_w_any_key = QCheck.(pair psq small_nat)
 
-let to_priority_list xs = Q.to_priority_seq xs |> List.of_seq
-let balanced q =
-  let (n, d) = Q.(size q, depth q) in
-  n <= 1 || float d < log (float n) *. log 10. *. 3.75
-
 let test name gen p =
-  QCheck.Test.make ~name gen p |> QCheck_alcotest.to_alcotest
+  QCheck.Test.make ~count:100 ~name gen p |> QCheck_alcotest.to_alcotest
 
 let () = Alcotest.run "psq" [
 
   "of_list", [
     test "sem" bindings
-      (fun xs ->
-        Q.(to_list (of_list xs)) = sort_uniq_r cmp_k xs);
+      (fun xs -> !(Q.of_list xs) = sem xs);
     test "of_sorted_list sem" bindings
-      (fun xs ->
-        Q.of_sorted_list (sort_uniq_r cmp_k xs) =~= Q.of_list xs);
-    test "p-order" bindings
-      (fun xs ->
-        to_priority_list (Q.of_list xs) =
-          (sort_uniq_r cmp_k xs |> sorted_by_p));
+      (fun xs -> !(Q.of_sorted_list (sort_uniq_r cmp_k xs)) = sem xs);
     test "bal" bindings (fun xs -> balanced (Q.of_list xs));
     test "of_sorted_list bal" bindings
       (fun xs -> balanced (Q.of_sorted_list xs));
   ];
 
   "sg", [
-    test "sem" QCheck.small_nat (fun x -> Q.(to_list (sg x x)) = [x, x]);
+    test "sem" QCheck.small_nat (fun x -> !Q.(sg x x) = sem [x, x]);
   ];
 
   "(++)", [
     test "sem" QCheck.(pair bindings bindings)
-      (fun (xs1, xs2) ->
-        Q.(of_list xs1 ++ of_list xs2) =~= Q.(of_list (xs1 @ xs2)));
+      (fun (xs1, xs2) -> !Q.(of_list xs1 ++ of_list xs2) = sem (xs1 @ xs2));
   ];
 
   "size", [
@@ -74,7 +69,7 @@ let () = Alcotest.run "psq" [
   ];
 
   "membership", [
-    test "mem sem" psq_w_any_key
+    test "find sem" psq_w_any_key
       (fun (q, x) -> Q.find x q = List.assoc_opt x (Q.to_list q));
     test "mem ==> find" psq_w_any_key
       (fun (q, k) -> QCheck.assume Q.(mem k q); Q.find k q <> None);
@@ -85,59 +80,53 @@ let () = Alcotest.run "psq" [
   "add", [
     test "sem" psq_w_any_key
       (fun (q, x) ->
-        Q.(to_list (add x x q)) =
-          ((x, x) :: List.remove_assoc x (Q.to_list q) |> sorted_by_k));
-    test "p-order" psq_w_any_key
-      (fun (q, k) ->
-        to_priority_list (Q.add k k q) =
-          ((k, k) :: List.remove_assoc k (to_priority_list q) |> sorted_by_p));
+        !(Q.add x x q) = sem ((x, x) :: List.remove_assoc x (Q.to_list q)));
     test "= of_list" bindings
       (fun xs ->
-        Q.of_list xs =~=
-          List.fold_left (fun q (k, p) -> Q.add k p q) Q.empty xs);
+        !(Q.of_list xs) =
+          !(List.fold_left (fun q (k, p) -> Q.add k p q) Q.empty xs));
     test "bal" psq_w_any_key (fun (q, k) -> balanced (Q.add k k q));
   ];
 
   "remove", [
     test "sem" psq_w_any_key
       (fun (q, k) ->
-        Q.(to_list (remove k q)) =
-          (List.remove_assoc k (Q.to_list q) |> sorted_by_k));
+        !(Q.remove k q) = sem (List.remove_assoc k (Q.to_list q)));
     test "phys" psq_w_any_key
       (fun (q, k) -> QCheck.assume (not (Q.mem k q)); Q.remove k q == q);
-    test "balance" psq_w_any_key (fun (q, k) -> Q.(remove k q |> balanced));
+    test "bal" psq_w_any_key (fun (q, k) -> Q.(remove k q |> balanced));
   ];
 
   "adjust", [
     test "sem" psq_w_any_key
       (fun (q, x) ->
-        Q.(to_list (adjust x succ q)) =
-          List.map (fun (k, p) -> (k, if k = x then succ p else p))
-            (Q.to_list q));
+        !(Q.adjust x succ q) =
+          sem (Q.to_list q |>
+            List.map (fun (k, p) -> (k, if k = x then succ p else p))));
   ];
 
   "pop", [
-    test "sem" psq (fun q -> to_priority_list q = unfold Q.pop q);
+    test "sem" psq (fun q -> Q.to_priority_list q = unfold Q.pop q);
     test "min, rest" psq
       (fun q ->
         QCheck.assume (not (Q.is_empty q));
         match Q.(pop q, min q, rest q) with
-          Some (kp1, q1), Some kp2, Some q2 -> kp1 = kp2 && q1 =~= q2
+          Some (kp1, q1), Some kp2, Some q2 -> kp1 = kp2 && !q1 = !q2
         | _ -> false);
   ];
 
   "at_most", [
     test "sem" psq_w_any_key
       (fun (q, x) ->
-        List.of_seq (Q.seq_at_most x q) =
+        List.of_seq (Q.to_seq_at_most x q) =
           List.filter (fun kp -> snd kp <= x) (Q.to_list q));
     test "seq = fold" psq_w_any_key
       (fun (q, x) ->
-        List.of_seq (Q.seq_at_most x q) =
+        List.of_seq (Q.to_seq_at_most x q) =
           Q.fold_at_most x (fun k p xs -> (k, p)::xs) [] q);
     test "seq = iter" psq_w_any_key
       (fun (q, x) ->
-        List.of_seq (Q.seq_at_most x q) =
+        List.of_seq (Q.to_seq_at_most x q) =
           list_of_iter_2 (fun f -> Q.iter_at_most x f q));
   ];
 
@@ -153,8 +142,8 @@ let () = Alcotest.run "psq" [
   "filter", [
     test "sem" psq_w_any_key
       (fun (q, k0) ->
-        Q.(to_list (filter (fun k _ -> k <= k0) q)) =
-          List.filter (fun (k, _) -> k <= k0) (Q.to_list q));
+        !(Q.filter (fun k _ -> k <= k0) q) =
+          sem (List.filter (fun (k, _) -> k <= k0) (Q.to_list q)));
     test "bal" psq_w_any_key
       (fun (q, k0) -> balanced (Q.filter (fun k _ -> k <= k0) q));
   ];

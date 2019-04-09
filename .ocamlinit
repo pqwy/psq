@@ -18,23 +18,9 @@ let permutation n =
 
 let rec (--) a b = if a > b then [] else a :: succ a -- b
 
-module Q = Psq.Make
-  (struct type t = int let compare = compare end)
-  (struct type t = int let compare = compare end)
+module I = struct type t = int let compare = compare end
+module Q = Psq.Make (I) (I)
 
-let pp_int ppf = Format.fprintf ppf "%d"
-let pp_pair pp1 pp2 ppf (a, b) = Format.fprintf ppf "@[(%a,@ %a)@]" pp1 a pp2 b
-
-let pp_dump = Q.pp_dump pp_int pp_int
-let pp = Q.pp (pp_pair pp_int pp_int)
-
-let sample = [
-  "A", 4;
-  "B", 5;
-  "C", 2;
-  "D", 1;
-  "E", 9;
-  "F", 0;
-  "G", 4;
-  "H", 0;
-]
+let pp_q = Q.pp_dump Fmt.int Fmt.int
+;;
+#install_printer pp_q
