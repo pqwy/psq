@@ -1,3 +1,12 @@
+## v0.2.0 2019-04-09
+
+Semantics cleanup.
+
+- flipped args to `adjust` **breaking**
+- `of_list` now always chooses the rightmost binding
+- `update`, `(++)`, `add_seq`, `to_priority_list`
+- somewhat faster
+
 ## v0.1.1 2019-04-06
 
 - `Seq.t` conversions

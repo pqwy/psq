@@ -41,7 +41,7 @@ let psq = QCheck.(
 let psq_w_any_key = QCheck.(pair psq small_nat)
 
 let test name gen p =
-  QCheck.Test.make ~count:100 ~name gen p |> QCheck_alcotest.to_alcotest
+  QCheck.Test.make ~count:200 ~name gen p |> QCheck_alcotest.to_alcotest
 
 let () = Alcotest.run "psq" [
 
