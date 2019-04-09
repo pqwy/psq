@@ -155,6 +155,12 @@ module type S = sig
 
       {b Note} Priority-ordered traversal is slower than key-ordered traversal. *)
 
+  val to_priority_seq : t -> (k * p) Seq.t
+  (** [to_priority_seq t] is the sequence version of [to_priority_list].
+
+      {b Note} For traversing the whole [t], [to_priority_list] is more
+      efficient. *)
+
   val filter : (k -> p -> bool) -> t -> t
   (** [filter p t] is the search queue with exactly the bindings in [t] which
       satisfy the predicate [p]. *)

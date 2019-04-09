@@ -137,6 +137,8 @@ let () = Alcotest.run "psq" [
       (fun q -> Q.to_list q = Q.fold (fun k p xs -> (k, p) :: xs) [] q);
     test "to_list = iter" psq
       (fun q -> Q.to_list q = list_of_iter_2 (fun f -> Q.iter f q));
+    test "to_priority_seq" psq
+      (fun q -> Q.to_priority_list q = List.of_seq (Q.to_priority_seq q));
   ];
 
   "filter", [

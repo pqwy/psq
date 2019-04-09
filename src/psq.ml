@@ -37,6 +37,7 @@ module type S = sig
   val fold : (k -> p -> 'a -> 'a) -> 'a -> t -> 'a
   val iter : (k -> p -> unit) -> t -> unit
   val to_priority_list : t -> (k * p) list
+  val to_priority_seq : t -> (k * p) Seq.t
   val filter : (k -> p -> bool) -> t -> t
   val partition : (k -> p -> bool) -> t -> t * t
   val pp : ?sep:(unit fmt) -> (k * p) fmt -> t fmt
@@ -313,16 +314,29 @@ struct
   let to_list t = foldr (fun kp xs -> kp :: xs) [] t
   let to_seq t () = lfoldr (fun kp xs -> Seq.Cons (kp, xs)) t Seq.empty
 
-  let rec merge n1 n2 = match n1, n2 with
-    [], s | s, [] -> s
-  | x::xt, y::yt -> if x @<=@ y then x :: merge xt n2 else y :: merge n1 yt
-
   let to_priority_list t =
+    let rec (--) xs ys = match xs, ys with
+      [], l | l, [] -> l
+    | x::xt, y::yt -> if x @<=@ y then x :: (xt -- ys) else y :: (xs -- yt) in
     let rec go = function
       Lf -> []
-    | NdL (kp2, t1, _, t2, _) -> merge (kp2 :: go t1) (go t2)
-    | NdR (kp2, t1, _, t2, _) -> merge (go t1) (kp2 :: go t2) in
+    | NdL (kp2, t1, _, t2, _) -> (kp2 :: go t1) -- go t2
+    | NdR (kp2, t1, _, t2, _) -> go t1 -- (kp2 :: go t2) in
     match t with N -> [] | T (kp, _, t) -> kp :: go t
+
+  let to_priority_seq t () =
+    let open Seq in
+    let rec (--) n1 n2 = match n1, n2 with
+      Nil, n | n, Nil -> n
+    | Cons (x, xt), Cons (y, yt) ->
+        if x @<=@ y then
+          Cons (x, fun _ -> xt () -- n2)
+        else Cons (y, fun _ -> n1 -- yt ()) in
+    let rec go = function
+      Lf -> Nil
+    | NdL (kp2, t1, _, t2, _) -> Cons (kp2, fun _ -> go t1) -- go t2
+    | NdR (kp2, t1, _, t2, _) -> go t1 -- Cons (kp2, fun _ -> go t2) in
+    match t with N -> Nil | T (kp, _, t) -> Cons (kp, fun _ -> go t)
 
   let sg k p = sg (k, p)
 
