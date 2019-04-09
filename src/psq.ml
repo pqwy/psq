@@ -27,16 +27,16 @@ module type S = sig
   val pop : t -> ((k * p) * t) option
   val fold_at_most : p -> (k -> p -> 'a -> 'a) -> 'a -> t -> 'a
   val iter_at_most : p -> (k -> p -> unit) -> t -> unit
-  val seq_at_most : p -> t -> (k * p) Seq.t
+  val to_seq_at_most : p -> t -> (k * p) Seq.t
   val of_list : (k * p) list -> t
   val of_sorted_list : (k * p) list -> t
   val of_seq : (k * p) Seq.t -> t
   val add_seq : (k * p) Seq.t -> t -> t
   val to_list : t -> (k * p) list
   val to_seq : t -> (k * p) Seq.t
-  val to_priority_seq : t -> (k * p) Seq.t
   val fold : (k -> p -> 'a -> 'a) -> 'a -> t -> 'a
   val iter : (k -> p -> unit) -> t -> unit
+  val to_priority_list : t -> (k * p) list
   val filter : (k -> p -> bool) -> t -> t
   val partition : (k -> p -> bool) -> t -> t * t
   val pp : ?sep:(unit fmt) -> (k * p) fmt -> t fmt
@@ -163,8 +163,7 @@ struct
     | NdL ((k, p), t1, sk, t2, _)
     | NdR ((k, p), t1, sk, t2, _) ->
         if K.compare k0 k = 0 then Some p else
-          if K.compare k0 sk <= 0 then go k0 t1 else
-            go k0 t2 in
+          if K.compare k0 sk <= 0 then go k0 t1 else go k0 t2 in
     match t with
       N -> None
     | T ((k, p), _, t) -> if K.compare k0 k = 0 then Some p else go k0 t
@@ -193,7 +192,7 @@ struct
   let iter_at_most p0 f t =
     foldr_at_most p0 (fun (k, p) i -> f k p; i ()) t ignore
 
-  let seq_at_most p0 t () =
+  let to_seq_at_most p0 t () =
     foldr_at_most p0 (fun kp seq -> Seq.Cons (kp, seq)) t Seq.empty
 
   (* type view = Nv | Sgv of (k * p) | Binv of t * K.t * t *)
@@ -238,10 +237,10 @@ struct
   let update k0 f t =
     let node f k0 p = match f p with
       Some p -> sg (k0, p) | None -> N [@@inline] in
-    let rec go k0 f kp1 sk1 = function
+    let rec go k0 f (k1, p1 as kp1) sk1 = function
       Lf ->
-        let c = K.compare k0 (fst kp1) in
-        if c = 0 then node f k0 (Some (snd kp1)) else
+        let c = K.compare k0 k1 in
+        if c = 0 then node f k0 (Some p1) else
         ( match f None with
             Some p -> if c < 0 then (k0, p) >|< kp1 else kp1 >|< (k0, p)
           | None   -> raise_notrace Exit )
@@ -267,7 +266,6 @@ struct
     | NdL (kp2, t1, sk2, t2, _) -> go pf kp2 sk2 t1 >< go pf kp1 sk1 t2
     | NdR (kp2, t1, sk2, t2, _) -> go pf kp1 sk2 t1 >< go pf kp2 sk1 t2 in
     match t with N -> N | T (kp, sk, t) -> go pf kp sk t
-
 
   let partition pf t = (filter pf t, filter (fun k p -> not (pf k p)) t)
 
@@ -315,22 +313,16 @@ struct
   let to_list t = foldr (fun kp xs -> kp :: xs) [] t
   let to_seq t () = lfoldr (fun kp xs -> Seq.Cons (kp, xs)) t Seq.empty
 
-  let rec merge n1 n2 = Seq.(match n1, n2 with
-    Nil, s | s, Nil -> s
-  | Cons (x, xt), Cons (y, yt) ->
-      if x @<=@ y then
-        Cons (x, fun () -> merge (xt ()) n2)
-      else Cons (y, fun () -> merge n1 (yt ())))
+  let rec merge n1 n2 = match n1, n2 with
+    [], s | s, [] -> s
+  | x::xt, y::yt -> if x @<=@ y then x :: merge xt n2 else y :: merge n1 yt
 
-  let to_priority_seq t () =
-    let open Seq in
+  let to_priority_list t =
     let rec go = function
-      Lf -> Nil
-    | NdL (kp2, t1, _, t2, _) ->
-        merge (Cons (kp2, fun () -> go t1)) (go t2)
-    | NdR (kp2, t1, _, t2, _) ->
-        merge (go t1) (Cons (kp2, fun () -> go t2)) in
-    match t with N -> Nil | T (kp, _, t) -> Cons (kp, fun () -> go t)
+      Lf -> []
+    | NdL (kp2, t1, _, t2, _) -> merge (kp2 :: go t1) (go t2)
+    | NdR (kp2, t1, _, t2, _) -> merge (go t1) (kp2 :: go t2) in
+    match t with N -> [] | T (kp, _, t) -> kp :: go t
 
   let sg k p = sg (k, p)
 

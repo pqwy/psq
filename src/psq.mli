@@ -110,7 +110,7 @@ module type S = sig
   (** [iter_at_most p0 f q] applies [f] to the bindings [k -> p] where [p] is
       not larger than [p0], in key-ascending order. *)
 
-  val seq_at_most : p -> t -> (k * p) Seq.t
+  val to_seq_at_most : p -> t -> (k * p) Seq.t
   (** [iter_at_most p0 f q] is the sequence of bindings [k -> p] where [p] not
       larger than [p0], in key-ascending order. *)
 
@@ -124,9 +124,10 @@ module type S = sig
 
   val of_sorted_list : (k * p) list -> t
   (** [of_sorted_list kps] is [t] with bindings [kps].
-      This operation is generally faster than {{!of_list}[of_list]}.
       [kps] must contain the bindings in key-ascending order without
-      repetitions. When this is not the case, the result is undefined. *)
+      repetitions. When this is not the case, the result is undefined.
+
+      {b Note} This operation is faster than {{!of_list}[of_list]}. *)
 
   val of_seq : (k * p) Seq.t -> t
   (** [of_seq kps] is [of_list (List.of_seq kps)]. *)
@@ -142,16 +143,17 @@ module type S = sig
   val to_seq : t -> (k * p) Seq.t
   (** [to_seq t] iterates over bindings in [t] in key-ascending order. *)
 
-  val to_priority_seq : t -> (k * p) Seq.t
-  (** [to_priority_seq t] iterates over bindings in [t] in priority-ascending
-      order. *)
-
   val fold : (k -> p -> 'a -> 'a) -> 'a -> t -> 'a
-  (** [fold f z t] is [f k0 p0 (f k1 p1 ... (f kn pn z))]. Bindings are folded
-      over in key-ascending order. *)
+  (** [fold f z t] is [f k0 p0 (f k1 p1 ... (f kn pn z))], where
+      [k0, k1, ..., kn] are in ascending order. *)
 
   val iter : (k -> p -> unit) -> t -> unit
   (** [iter f t] applies [f] to all bindings in [t] in key-ascending order. *)
+
+  val to_priority_list : t -> (k * p) list
+  (** [to_priority_list t] are the bindings in [t] in priority-ascending order.
+
+      {b Note} Priority-ordered traversal is slower than key-ordered traversal. *)
 
   val filter : (k -> p -> bool) -> t -> t
   (** [filter p t] is the search queue with exactly the bindings in [t] which
