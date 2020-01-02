@@ -49,7 +49,13 @@ module type S = sig
       binding [k -> p]. *)
 
   val (++) : t -> t -> t
-  (** [t1 ++ t2] adds bindings in [t2] to [t1]. *)
+  (** [t1 ++ t2] contains bindings from [t1] and [t2]. If a key [k] is bound in
+      both, the result has the binding with lower priority.
+
+      Hence,
+      {ul
+      {- [t1 ++ t2 = t2 ++ t1]}
+      {- [(t1 ++ t2) ++ t3 = t1 ++ (t2 ++ t3)]}} *)
 
   val is_empty : t -> bool
   (** [is_empty t] is [true] iff [t] is {{!empty}[empty]}. *)
@@ -129,15 +135,16 @@ module type S = sig
   val of_list : (k * p) list -> t
   (** [of_list kps] is [t] with bindings [kps].
 
-      When there are multiple bindings for a given [k], the rightmost binding is
-      chosen. *)
+      When [pks] contains multiple priorities for a given [k], the lowest one
+      wins. *)
 
   val of_sorted_list : (k * p) list -> t
   (** [of_sorted_list kps] is [t] with bindings [kps].
       [kps] must contain the bindings in key-ascending order without
       repetitions. When this is not the case, the result is undefined.
 
-      {b Note} This operation is faster than {{!of_list}[of_list]}. *)
+      {b Note} When applicable, this operation is faster than
+      {{!of_list}[of_list]}. *)
 
   val of_seq : (k * p) Seq.t -> t
   (** [of_seq kps] is [of_list (List.of_seq kps)]. *)

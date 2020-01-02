@@ -46,14 +46,6 @@ module type S = sig
   val depth : t -> int
 end
 
-module L = struct
-  include List
-  let rec take n = function
-    x::xs when n > 0 -> x :: take (pred n) xs | _ -> []
-  let rec drop n = function
-    _::xs when n > 0 -> drop (pred n) xs | xs -> xs
-end
-
 module Make (K: Ordered) (P: Ordered) :
   S with type k = K.t and type p = P.t =
 struct
@@ -278,18 +270,30 @@ struct
   let partition pf t = (filter pf t, filter (fun k p -> not (pf k p)) t)
 
   let of_sorted_list xs =
-    let rec go n = function
-      []        -> N
-    | [x]       -> sg x
-    | [x;y]     -> x >|< y
-    | [x;y;z]   -> (x >|< y) >< sg z
-    | [x;y;z;w] -> (x >|< y) >< (z >|< w)
-    | xs -> let m = n / 2 in go m L.(take m xs) >< go (n - m) L.(drop m xs) in
-    go (L.length xs) xs
+    let rec group1 = function
+    | [] -> []
+    | [x] -> [sg x]
+    | [x;y] -> [x >|< y]
+    | [x;y;z] -> [(x >|< y) >< sg z]
+    | x::y::z::w::xs -> ((x >|< y) >< (z >|< w)) :: group1 xs
+    and group2 = function
+    | [] | [_] as r -> r
+    | [x;y] -> [x >< y]
+    | [x;y;z] -> [(x >< y) >< z]
+    | x::y::z::w::xs -> ((x >< y) >< (z >< w)) :: group2 xs
+    and go = function [] -> N | [t] -> t | ts -> go (group2 ts) in
+    go (group1 xs)
 
-  let cmp_k (k1, _) (k2, _) = K.compare k1 k2
-
-  let of_list xs = Psq_list.sort_uniq cmp_k xs |> of_sorted_list
+  let of_list =
+    let rec sieve k0 a = function
+    | [] -> a
+    | (k, _) as kv :: kvs ->
+        if K.compare k0 k = 0 then sieve k0 a kvs else sieve k (kv :: a) kvs in
+    let cmp_kv (k1, p1) (k2, p2) =
+      match K.compare k2 k1 with 0 -> P.compare p1 p2 | r -> r in
+    fun xs -> match List.sort cmp_kv xs with
+    | [] -> empty
+    | (k, _) as kv :: kvs -> sieve k [kv] kvs |> of_sorted_list
 
   let of_seq xs = Seq.fold_left (fun xs a -> a::xs) [] xs |> of_list
 
@@ -316,7 +320,7 @@ struct
     | NdR (kp, t1, _, t2, _) -> go kp0 f (fun () -> go kp f z t2) t1 in
     match t with T (kp, _, t) -> go kp f z t | N -> z ()
 
-  let (++) q1 q2 = foldr (fun (k, p) q -> add k p q) q1 q2
+  let (++) q1 q2 = foldr (fun (k, p) q -> push k p q) q1 q2
   let fold f z t = foldr (fun (k, p) z -> f k p z) z t
   let to_list t = foldr (fun kp xs -> kp :: xs) [] t
   let to_seq t () = lfoldr (fun kp xs -> Seq.Cons (kp, xs)) t Seq.empty

@@ -1,6 +1,5 @@
 (library
   (public_name psq)
   (synopsis "Functional Priority Search Queues")
-  (private_modules psq_list)
   (libraries seq)
   (wrapped false))
