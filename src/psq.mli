@@ -67,12 +67,22 @@ module type S = sig
       otherwise. *)
 
   val add : k -> p -> t -> t
-  (** [add k p t] is [t] with the binding [k -> p]. If [k] is already bound in
-      [t], that binding is replaced. *)
+  (** [add k p t] is [t] with the binding [k -> p].
+
+      Note that [add] does {e not} commute:
+      [add k p2 (add k p1 q) <> add k p1 (add k p2 q)] when [p1 <> p2].
+      Compare {!push}. *)
+
+  val push : k -> p -> t -> t
+  (** [push k p t] is [t] with [k] bound to the lower of [p] and its previous
+      priority in [t], if it exists — when [t] contains [k -> p0], the result
+      contains [k -> min p0 p], otherwise it contains [k -> p].
+
+      Note that [push] commutes:
+      [push k p1 (push k p2 q) = push k p2 (push k p1 q)]. Compare {!add}. *)
 
   val remove : k -> t -> t
-  (** [remove k t] is [t] without the binding for [k], or [t], if [k] is not
-      bound in [t]. *)
+  (** [remove k t] is [t] without any bindings for [k]. *)
 
   val adjust : k -> (p -> p) -> t -> t
   (** [adjust k f t] is [t] with the binding [k -> p] replaced by [k -> f p].
@@ -93,8 +103,8 @@ module type S = sig
   (** [min t] is the binding [Some (k, p)] where [p] is minimal in [t], or
       [None] if [t] is {{!empty}[empty]}.
 
-      Note that [min t] is actually the smallest [(p, k)] in [t] — when multiple
-      bindings share [p], [min t] is the one with the smallest [k]. *)
+      When several keys share the minimal priority, [min t] is the binding with
+      the smallest key. *)
 
   val rest : t -> t option
   (** [rest t] is [t] without the binding [min t], or [None]. *)

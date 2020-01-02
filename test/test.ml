@@ -38,7 +38,9 @@ let bindings = QCheck.(
 let psq = QCheck.(
   map Q.of_list bindings ~rev:Q.to_list |>
     set_print Fmt.(to_to_string (Q.pp_dump int int)))
-let psq_w_any_key = QCheck.(pair psq small_nat)
+let kv = QCheck.small_nat
+let psq_w arb = QCheck.pair psq arb
+let psq_w_any_key = psq_w kv
 
 let test name gen p =
   QCheck.Test.make ~count:200 ~name gen p |> QCheck_alcotest.to_alcotest
@@ -56,7 +58,7 @@ let () = Alcotest.run "psq" [
   ];
 
   "sg", [
-    test "sem" QCheck.small_nat (fun x -> !Q.(sg x x) = sem [x, x]);
+    test "sem" kv (fun x -> !Q.(sg x x) = sem [x, x]);
   ];
 
   "(++)", [
@@ -77,6 +79,17 @@ let () = Alcotest.run "psq" [
       (fun (q, k) -> QCheck.assume (Q.find k q <> None); Q.mem k q);
   ];
 
+  "update", [
+    test "sem" (psq_w QCheck.(pair kv (option kv)))
+      (fun (q, (x, yy)) ->
+        let kp = match yy with Some y -> [x, y] | _ -> [] in
+        !(Q.update x (fun _ -> yy) q) =
+          sem (kp @ List.remove_assoc x (Q.to_list q)));
+    test "bal" (psq_w QCheck.(pair kv (option kv)))
+      (fun (q, (x, yy)) -> is_balanced (Q.update x (fun _ -> yy) q));
+    test "phys" psq_w_any_key (fun (q, x) -> Q.update x id q == q);
+  ];
+
   "add", [
     test "sem" psq_w_any_key
       (fun (q, x) ->
@@ -86,6 +99,22 @@ let () = Alcotest.run "psq" [
         !(Q.of_list xs) =
           !(List.fold_left (fun q (k, p) -> Q.add k p q) Q.empty xs));
     test "bal" psq_w_any_key (fun (q, k) -> balanced (Q.add k k q));
+  ];
+
+  "push", [
+    test "sem" psq_w_any_key
+      (fun (q, x) ->
+        let p = match List.assoc_opt x (Q.to_list q) with
+        | Some p0 -> min x p0
+        | None -> x in
+        !(Q.push x x q) = sem ((x, p) :: List.remove_assoc x (Q.to_list q)));
+    test "mono" psq_w_any_key
+       (fun (q, x) ->
+         QCheck.assume (Q.mem x q);
+         Q.find x (Q.push x x q) <= Q.find x q);
+    test "comm" (psq_w (QCheck.pair kv kv))
+      (fun (q, (x, y)) ->
+        !Q.(q |> push x x |> push x y) = !Q.(q |> push x y |> push x x));
   ];
 
   "remove", [

@@ -1,3 +1,7 @@
+## (trunk)
+
+- added `push` to bump priorities
+
 ## v0.2.0 2019-04-09
 
 Semantics cleanup.

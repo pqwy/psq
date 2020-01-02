@@ -19,6 +19,7 @@ module type S = sig
   val mem : k -> t -> bool
   val find : k -> t -> p option
   val add : k -> p -> t -> t
+  val push : k -> p -> t -> t
   val remove : k -> t -> t
   val adjust : k -> (p -> p) -> t -> t
   val update : k -> (p option -> p option) -> t -> t
@@ -236,15 +237,18 @@ struct
   (* | Binv (t1, _, t2) -> filter pf t1 >< filter pf t2 *)
 
   let update k0 f t =
-    let node f k0 p = match f p with
-      Some p -> sg (k0, p) | None -> N [@@inline] in
     let rec go k0 f (k1, p1 as kp1) sk1 = function
       Lf ->
         let c = K.compare k0 k1 in
-        if c = 0 then node f k0 (Some p1) else
-        ( match f None with
-            Some p -> if c < 0 then (k0, p) >|< kp1 else kp1 >|< (k0, p)
-          | None   -> raise_notrace Exit )
+        if c = 0 then
+          match f (Some p1) with
+          | Some p when p == p1 -> raise_notrace Exit
+          | Some p -> sg (k0, p)
+          | None -> N
+        else ( match f None with
+          | Some p when c < 0 -> (k0, p) >|< kp1
+          | Some p -> kp1 >|< (k0, p)
+          | None -> raise_notrace Exit )
     | NdL (kp2, t1, sk2, t2, _) ->
         if K.compare k0 sk2 <= 0 then
           go k0 f kp2 sk2 t1 >< T (kp1, sk1, t2)
@@ -254,10 +258,13 @@ struct
           go k0 f kp1 sk2 t1 >< T (kp2, sk1, t2)
         else T (kp1, sk2, t1) >< go k0 f kp2 sk1 t2 in
     match t with
-      N -> node f k0 None
+      N -> (match f None with Some p -> sg (k0, p) | _ -> N)
     | T (kp, sk, t1) -> try go k0 f kp sk t1 with Exit -> t
 
   let add k p t = update k (fun _ -> Some p) t
+  let push k p t = update k (function
+    | Some p0 -> Some (if P.compare p p0 < 0 then p else p0)
+    | None -> Some p) t
   let remove k t = update k (fun _ -> None) t
   let adjust k f t = update k (function Some p -> Some (f p) | _ -> None) t
 
