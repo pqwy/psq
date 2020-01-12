@@ -80,6 +80,15 @@ let () = Alcotest.run "psq" [
       (fun (q1, (q2, q3)) -> !Q.((q1 ++ q2) ++ q3) = !Q.(q1 ++ (q2 ++ q3)));
   ];
 
+  "split_at", [
+    test "sem" psq_w_any_key (fun (q, k) ->
+      let q1, q2 = Q.split_at k q
+      and xs1, xs2 = List.partition (fun (k1, _) -> k1 <= k) (Q.to_list q) in
+      !q1 = sem xs1 && !q2 = sem xs2);
+    test "inv" psq_w_any_key (fun (q, k) ->
+      let q1, q2 = Q.split_at k q in !q = !Q.(q1 ++ q2));
+  ];
+
   "membership", [
     test "find sem" psq_w_any_key
       (fun (q, x) -> Q.find x q = List.assoc_opt x (Q.to_list q));

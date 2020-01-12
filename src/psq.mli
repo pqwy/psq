@@ -103,6 +103,10 @@ module type S = sig
       When the result of applying [f] is [Some p'], the binding [k -> p'] is
       added to [t]; otherwise, the binding for [k] is removed from [t]. *)
 
+  val split_at : k -> t -> t * t
+  (** [split_at k t] splits [t] into [(t0, t1)], such that for all keys [k0] in
+      [t0], [k0 <= k], for all keys [k1] in [t1], [k1 > k], and [t = t0 ++ t1].  *)
+
   (** {1 Access by min [p]} *)
 
   val min : t -> (k * p) option

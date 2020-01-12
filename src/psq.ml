@@ -23,6 +23,7 @@ module type S = sig
   val remove : k -> t -> t
   val adjust : k -> (p -> p) -> t -> t
   val update : k -> (p option -> p option) -> t -> t
+  val split_at : k -> t -> t * t
   val min : t -> (k * p) option
   val rest : t -> t option
   val pop : t -> ((k * p) * t) option
@@ -267,7 +268,20 @@ struct
     | NdR (kp2, t1, sk2, t2, _) -> go pf kp1 sk2 t1 >< go pf kp2 sk1 t2 in
     match t with N -> N | T (kp, sk, t) -> go pf kp sk t
 
-  let partition pf t = (filter pf t, filter (fun k p -> not (pf k p)) t)
+  let partition pf t = filter pf t, filter (fun k p -> not (pf k p)) t
+
+  let split_at =
+    let rec go k0 pk sk = function
+    | Lf -> if K.compare (fst pk) k0 <= 0 then sg pk, empty else empty, sg pk
+    | NdL (pk1, t1, sk1, t2, _) ->
+        if K.compare k0 sk1 <= 0 then
+          let t11, t12 = go k0 pk1 sk1 t1 in t11, t12 >< T (pk, sk, t2)
+        else let t21, t22 = go k0 pk sk t2 in T (pk1, sk1, t1) >< t21, t22
+    | NdR (pk1, t1, sk1, t2, _) ->
+        if K.compare k0 sk1 <= 0 then
+          let t11, t12 = go k0 pk sk1 t1 in t11, t12 >< T (pk1, sk, t2)
+        else let t21, t22 = go k0 pk1 sk t2 in T (pk, sk1, t1) >< t21, t22 in
+    fun k0 -> function N -> N, N | T (pk, sk, t) -> go k0 pk sk t
 
   let of_sorted_list xs =
     let rec group1 = function
@@ -321,6 +335,7 @@ struct
     match t with T (kp, _, t) -> go kp f z t | N -> z ()
 
   let (++) q1 q2 = foldr (fun (k, p) q -> push k p q) q1 q2
+
   let fold f z t = foldr (fun (k, p) z -> f k p z) z t
   let to_list t = foldr (fun kp xs -> kp :: xs) [] t
   let to_seq t () = lfoldr (fun kp xs -> Seq.Cons (kp, xs)) t Seq.empty

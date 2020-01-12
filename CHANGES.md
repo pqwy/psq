@@ -1,6 +1,7 @@
 ## (trunk)
 
 - added `push` to bump priorities
+- added `split_at`
 - changed `++`, `of_list` to select the lowest, not the last/rightmost priority
 
 ## v0.2.0 2019-04-09
