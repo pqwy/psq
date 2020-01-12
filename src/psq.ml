@@ -283,6 +283,21 @@ struct
         else let t21, t22 = go k0 pk1 sk t2 in T (pk, sk1, t1) >< t21, t22 in
     fun k0 -> function N -> N, N | T (pk, sk, t) -> go k0 pk sk t
 
+  let rec (++) =
+    let app q1 = function
+    | N -> q1
+    | T ((k, p), _, Lf) -> push k p q1
+    | T ((k1, p1), _,
+         (NdL ((k2, p2), Lf, _, Lf, _) |
+          NdR ((k2, p2), Lf, _, Lf, _))) -> push k1 p1 (push k2 p2 q1)
+    | T (kp, sk, NdL (kp1, t1, sk1, t2, _)) ->
+        let q11, q12 = split_at sk1 q1 in
+        (q11 ++ T (kp1, sk1, t1)) >< (q12 ++ T (kp, sk, t2))
+    | T (kp, sk, NdR (kp1, t1, sk1, t2, _)) ->
+        let q11, q12 = split_at sk1 q1 in
+        (q11 ++ T (kp, sk1, t1)) >< (q12 ++ T (kp1, sk, t2)) in
+    fun q1 q2 -> if size q1 < size q2 then app q2 q1 else app q1 q2
+
   let of_sorted_list xs =
     let rec group1 = function
     | [] -> []
@@ -333,8 +348,6 @@ struct
     | NdL (kp, t1, _, t2, _) -> go kp f (fun () -> go kp0 f z t2) t1
     | NdR (kp, t1, _, t2, _) -> go kp0 f (fun () -> go kp f z t2) t1 in
     match t with T (kp, _, t) -> go kp f z t | N -> z ()
-
-  let (++) q1 q2 = foldr (fun (k, p) q -> push k p q) q1 q2
 
   let fold f z t = foldr (fun (k, p) z -> f k p z) z t
   let to_list t = foldr (fun kp xs -> kp :: xs) [] t

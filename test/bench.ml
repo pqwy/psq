@@ -62,6 +62,19 @@ let runs1 size =
     ]
   ]
 
+let runs2 size =
+  let r_key () = Random.int (size * 5) in
+  let gen n = List.init n Random.(fun _ -> r_key (), int n) |> Q.of_list in
+  let xs, ys, zs = gen size, gen size, gen 10 in
+  group (Fmt.strf "x%d" size) [
+    bench "split" (fun () -> Q.split_at (r_key ()) xs);
+    bench "filter" (fun () ->
+      let x = r_key () in Q.filter (fun k _ -> k <= x) xs);
+    bench "++" (fun () -> Q.(xs ++ ys));
+    bench "++ k" (fun () -> Q.(xs ++ zs));
+  ]
+
+
 let arg = Cmdliner.Arg.(
   value @@ opt (list int) [10; 100; 1000] @@ info ["sizes"])
 let _ = Unmark_cli.main_ext "psq" ~arg @@ fun ns -> [
@@ -69,4 +82,5 @@ let _ = Unmark_cli.main_ext "psq" ~arg @@ fun ns -> [
   ; group "map" (List.map (runs m) ns)
   ; group "psq" (List.map (runs q) ns)
   ; group "psq1" (List.map runs1 ns)
+  ; group "psq2" (List.map runs2 ns)
 ]
