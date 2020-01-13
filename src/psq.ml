@@ -229,7 +229,7 @@ struct
   (* | Sgv (k, p as kp) -> if pf k p then sg kp else N *)
   (* | Binv (t1, _, t2) -> filter pf t1 >< filter pf t2 *)
 
-  let update k0 f t =
+  let update =
     let rec go k0 f (k1, p1 as kp1) sk1 = function
       Lf ->
         let c = K.compare k0 k1 in
@@ -250,9 +250,9 @@ struct
         if K.compare k0 sk2 <= 0 then
           go k0 f kp1 sk2 t1 >< T (kp2, sk1, t2)
         else T (kp1, sk2, t1) >< go k0 f kp2 sk1 t2 in
-    match t with
-      N -> (match f None with Some p -> sg (k0, p) | _ -> N)
-    | T (kp, sk, t1) -> try go k0 f kp sk t1 with Exit -> t
+    fun k0 f -> function
+    | N -> (match f None with Some p -> sg (k0, p) | _ -> N)
+    | T (kp, sk, t1) as t -> try go k0 f kp sk t1 with Exit -> t
 
   let add k p t = update k (fun _ -> Some p) t
   let push k p t = update k (function
@@ -261,12 +261,12 @@ struct
   let remove k t = update k (fun _ -> None) t
   let adjust k f t = update k (function Some p -> Some (f p) | _ -> None) t
 
-  let filter pf t =
+  let filter =
     let rec go pf kp1 sk1 = function
       Lf -> if pf (fst kp1) (snd kp1) then sg kp1 else N
     | NdL (kp2, t1, sk2, t2, _) -> go pf kp2 sk2 t1 >< go pf kp1 sk1 t2
     | NdR (kp2, t1, sk2, t2, _) -> go pf kp1 sk2 t1 >< go pf kp2 sk1 t2 in
-    match t with N -> N | T (kp, sk, t) -> go pf kp sk t
+    fun pf -> function N -> N | T (kp, sk, t) -> go pf kp sk t
 
   let partition pf t = filter pf t, filter (fun k p -> not (pf k p)) t
 
@@ -298,7 +298,7 @@ struct
         (q11 ++ T (kp, sk1, t1)) >< (q12 ++ T (kp1, sk, t2)) in
     fun q1 q2 -> if size q1 < size q2 then app q2 q1 else app q1 q2
 
-  let of_sorted_list xs =
+  let of_sorted_list =
     let rec group1 = function
     | [] -> []
     | [x] -> [sg x]
@@ -311,7 +311,7 @@ struct
     | [x;y;z] -> [(x >< y) >< z]
     | x::y::z::w::xs -> ((x >< y) >< (z >< w)) :: group2 xs
     and go = function [] -> N | [t] -> t | ts -> go (group2 ts) in
-    go (group1 xs)
+    fun xs -> go (group1 xs)
 
   let of_list =
     let rec sieve k0 a = function
@@ -328,32 +328,32 @@ struct
 
   let add_seq xs q = Seq.fold_left (fun q (k, p) -> add k p q) q xs
 
-  let iter f t =
+  let iter =
     let rec go (p0, k0 as pk0) f = function
       Lf -> f p0 k0
     | NdL (pk, t1, _, t2, _) -> go pk f t1; go pk0 f t2
     | NdR (pk, t1, _, t2, _) -> go pk0 f t1; go pk f t2 in
-    match t with N -> () | T (pk, _, t) -> go pk f t
+    fun f -> function N -> () | T (pk, _, t) -> go pk f t
 
-  let foldr f z t =
+  let foldr =
     let rec go kp0 f z = function
       Lf -> f kp0 z
     | NdL (kp, t1, _, t2, _) -> go kp f (go kp0 f z t2) t1
     | NdR (kp, t1, _, t2, _) -> go kp0 f (go kp f z t2) t1 in
-    match t with N -> z | T (kp, _, t) -> go kp f z t
+    fun f z -> function N -> z | T (kp, _, t) -> go kp f z t
 
-  let lfoldr f t z =
+  let lfoldr =
     let rec go kp0 f z = function
       Lf -> f kp0 z
     | NdL (kp, t1, _, t2, _) -> go kp f (fun () -> go kp0 f z t2) t1
     | NdR (kp, t1, _, t2, _) -> go kp0 f (fun () -> go kp f z t2) t1 in
-    match t with T (kp, _, t) -> go kp f z t | N -> z ()
+    fun f z -> function T (kp, _, t) -> go kp f z t | N -> z ()
 
   let fold f z t = foldr (fun (k, p) z -> f k p z) z t
   let to_list t = foldr (fun kp xs -> kp :: xs) [] t
-  let to_seq t () = lfoldr (fun kp xs -> Seq.Cons (kp, xs)) t Seq.empty
+  let to_seq t () = lfoldr (fun kp xs -> Seq.Cons (kp, xs)) Seq.empty t
 
-  let to_priority_list t =
+  let to_priority_list =
     let rec (--) xs ys = match xs, ys with
       [], l | l, [] -> l
     | x::xt, y::yt -> if x @<=@ y then x :: (xt -- ys) else y :: (xs -- yt) in
@@ -361,7 +361,7 @@ struct
       Lf -> []
     | NdL (kp2, t1, _, t2, _) -> (kp2 :: go t1) -- go t2
     | NdR (kp2, t1, _, t2, _) -> go t1 -- (kp2 :: go t2) in
-    match t with N -> [] | T (kp, _, t) -> kp :: go t
+    function N -> [] | T (kp, _, t) -> kp :: go t
 
   let to_priority_seq t () =
     let open Seq in
