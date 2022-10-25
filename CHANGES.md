@@ -1,4 +1,4 @@
-## (trunk)
+## v0.2.1 2022-10-25
 
 - added `push` to bump priorities
 - added `split_at`
