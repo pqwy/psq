@@ -1,316 +1,783 @@
 @charset "UTF-8";
-@import url("fonts/fonts.css");
-@import url("theme.css");
-
-/* Copyright (c) 2019 The odig programmers. All rights reserved.
+/* Copyright (c) 2016 The odoc contributors. All rights reserved.
    Distributed under the ISC license, see terms at the end of the file.
-   odig v0.0.4 */
+   odoc 2.1.1 */
 
-:root { --font-headings: "PT-Sans-Caption";
-        --font-body: "PT-Sans";
-        --font-mono: "DejaVu-SansMono";
+/* Fonts */
+@import url('https://fonts.googleapis.com/css?family=Fira+Mono:400,500');
+@import url('https://fonts.googleapis.com/css?family=Noticia+Text:400,400i,700');
+@import url('https://fonts.googleapis.com/css?family=Fira+Sans:400,400i,500,500i,600,600i,700,700i');
 
-        --size-font: 0.96875rem;
-        --size-font-micro: calc(0.675 * var(--size-font));
-        --size-font-tiny-ratio: 0.75;
-        --size-font-tiny:  calc(var(--size-font-tiny-ratio) * var(--size-font));
-        --size-font-small: calc(0.875 * var(--size-font));
-        --size-font-large: calc(1.25 * var(--size-font));
-        --size-font-big:   calc(1.5 * var(--size-font));
-        --size-font-huge:  calc(1.75 * var(--size-font));
-        --size-font-mono-ratio: 0.87097;
-        --size-line-ratio: 1.5;
-        --size-line: calc(var(--size-line-ratio) * var(--size-font));
-        --size-half-line: calc(0.5 * var(--size-line)); }
+:root,
+.light:root {
+   --main-background: #FFFFFF;
+
+  --color: #333333;
+  --link-color: #2C94BD;
+  --anchor-hover: #555;
+  --anchor-color: #d5d5d5;
+  --xref-shadow: #cc6666;
+  --header-shadow: #ddd;
+  --by-name-version-color: #aaa;
+  --by-name-nav-link-color: #222;
+  --target-background: rgba(187, 239, 253, 0.3);
+  --target-shadow: rgba(187, 239, 253, 0.8);
+  --pre-border-color: #eee;
+  --code-background: #f6f8fa;
+
+  --li-code-background: #f6f8fa;
+  --li-code-color: #0d2b3e;
+  --toc-color: #1F2D3D;
+  --toc-before-color: #777;
+  --toc-background: #f6f8fa;
+  --toc-list-border: #ccc;
+
+  --spec-summary-border-color: #5c9cf5;
+  --spec-summary-background: var(--code-background);
+  --spec-summary-hover-background: #ebeff2;
+  --spec-details-after-background: rgba(0, 4, 15, 0.05);
+  --spec-details-after-shadow: rgba(204, 204, 204, 0.53);
+}
+
+.dark:root {
+  --main-background: #202020;
+  --code-background: #222;
+  --line-numbers-background: rgba(0, 0, 0, 0.125);
+  --navbar-background: #202020;
+
+  --color: #bebebe;
+  --dirname-color: #666;
+  --underline-color: #444;
+  --visited-color: #002800;
+  --visited-number-color: #252;
+  --unvisited-color: #380000;
+  --unvisited-number-color: #622;
+  --somevisited-color: #303000;
+  --highlight-color: #303e3f;
+  --line-number-color: rgba(230, 230, 230, 0.3);
+  --unvisited-margin-color: #622;
+  --border: #333;
+  --navbar-border: #333;
+  --code-color: #ccc;
+
+  --li-code-background: #373737;
+  --li-code-color: #999;
+  --toc-color: #777;
+  --toc-background: #252525;
+
+  --hljs-link: #999;
+  --hljs-keyword: #cda869;
+  --hljs-regexp: #f9ee98;
+  --hljs-title: #dcdcaa;
+  --hljs-type: #ac885b;
+  --hljs-meta: #82aaff;
+  --hljs-variable: #cf6a4c;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --main-background: #202020;
+    --code-background: #333;
+    --line-numbers-background: rgba(0, 0, 0, 0.125);
+    --navbar-background: #202020;
+
+    --meter-unvisited-color: #622;
+    --meter-visited-color: #252;
+    --meter-separator-color: black;
+
+    --color: #bebebe;
+    --dirname-color: #666;
+    --underline-color: #444;
+    --visited-color: #002800;
+    --visited-number-color: #252;
+    --unvisited-color: #380000;
+    --unvisited-number-color: #622;
+    --somevisited-color: #303000;
+    --highlight-color: #303e3f;
+    --line-number-color: rgba(230, 230, 230, 0.3);
+    --unvisited-margin-color: #622;
+    --border: #333;
+    --navbar-border: #333;
+    --code-color: #ccc;
+    --by-name-nav-link-color: var(--color);
+
+    --li-code-background: #373737;
+    --li-code-color: #999;
+    --toc-color: #777;
+    --toc-before-color: #777;
+    --toc-background: #252525;
+    --toc-list-border: #ccc;
+    --spec-summary-hover-background: #ebeff2;
+    --spec-details-after-background: rgba(0, 4, 15, 0.05);
+    --spec-details-after-shadow: rgba(204, 204, 204, 0.53);
+
+    --hljs-link: #999;
+    --hljs-keyword: #cda869;
+    --hljs-regexp: #f9ee98;
+    --hljs-title: #dcdcaa;
+    --hljs-type: #ac885b;
+    --hljs-meta: #82aaff;
+    --hljs-variable: #cf6a4c;
+  }
+}
 
 /* Reset a few things. */
 
-html,body,div,span,applet,object,iframe,h1,h2,h3,h4,h5,h6,p,blockquote,pre,
-a,abbr,acronym,address,big,cite,code,del,dfn,em,img,ins,kbd,q,s,samp,select,
-small,strike,strong,sub,sup,tt,var,b,u,i,center,dl,dt,dd,ol,ul,li,
-fieldset,form,label,legend,table,caption,tbody,tfoot,thead,tr,th,td,
-article,aside,canvas,details,embed,figure,figcaption,footer,header,hgroup,
-menu,nav,output,ruby,section,summary,time,mark,audio,video,button,input
-{ margin: 0; padding: 0; border: 0; /* outline: 0; */
-  font-size: inherit; font: inherit; font-weight: inherit;
-  line-height: inherit; vertical-align: baseline;
-  text-align: inherit; color: inherit; background: transparent; }
+html, body, div, span, applet, object, iframe, h1, h2, h3, h4, h5, h6, p, blockquote, pre, a, abbr, acronym, address, big, cite, code, del, dfn, em, img, ins, kbd, q, s, samp, small, strike, strong, sub, sup, tt, var, b, u, i, center, dl, dt, dd, ol, ul, li, fieldset, form, label, legend, table, caption, tbody, tfoot, thead, tr, th, td, article, aside, canvas, details, embed, figure, figcaption, footer, header, hgroup, menu, nav, output, ruby, section, summary, time, mark, audio, video {
+  padding: 0;
+  border: 0;
+  font: inherit;
+  vertical-align: baseline;
 
-table { border-collapse: collapse; border-spacing: 0; }
-*,  *:before,  *:after { box-sizing: border-box; }
+}
 
-/* Geometry, a bit annoying at the moment and not exactly
-   the desired geometry on responses.
-   https://github.com/ocaml/odoc/issues/327
+table {
+  border-collapse: collapse;
+  border-spacing: 0;
+}
 
-   See also media adjustements at the end of the stylesheet. */
+*, *:before, *:after {
+  box-sizing: border-box;
+}
 
-body { background-color: var(--color-bg);
-       color: var(--color-fg); }
+html {
+  font-size: 15px;
+}
 
-.content
-{ font-size: var(--size-font);
-  font-family: var(--font-body), sans-serif;
-  font-weight: 400;
-  line-height: var(--size-line);
+body {
   text-align: left;
-  position: relative;
-  max-width: 120ch;
-  margin: 0 auto;
-  padding: calc(1.5 * var(--size-line));
-  padding-top: calc(0.5 * var(--size-line)); }
+  background: #FFFFFF;
+  color: var(--color);
+  background-color: var(--main-background);
+}
 
-.content > * { max-width: 78ch; width: 75% }
-.toc
-{ position: absolute;
-  top: 0px; right: 0px;
-  width: 20%;
-  margin-left: var(--size-line);
-  margin-top: calc(3 * var(--size-line));
-  margin-right: var(--size-line);
-  border-top: solid thin var(--color-rule); }
+body {
+  max-width: 100ex;
+  margin-left: calc(10vw + 20ex);
+  margin-right: 4ex;
+  margin-top: 20px;
+  margin-bottom: 50px;
+  font-family: "Noticia Text", Georgia, serif;
+  line-height: 1.5;
+}
 
-/* Horizontal rules. The way to do it is not so nice, e.g. for
-   anchoring it makes huge blobs on heading linking. It would be
-   better to emit hr in the markup and display:none them if you don't
-   want them.
+header {
+  margin-bottom: 30px;
+}
 
-   Some oddities may happen because of https://github.com/ocaml/odoc/issues/328
-*/
+nav {
+  font-family: "Fira Sans", Helvetica, Arial, sans-serif;
+}
 
-h1, h2, .content > header + dl
-{ border-top: solid thin var(--color-rule); padding-top: var(--size-line);}
+/* Basic markup elements */
 
-/* Basic markup */
+b, strong {
+  font-weight: bold;
+}
 
-h1, h2, h3, h4, h5, h6
-{ font-family: var(--font-headings), sans-serif;
-  font-weight: 400;
-  text-transform: uppercase;
-  margin-top: var(--size-line); }
+i {
+  font-style: italic;
+}
 
-h1 { font-size: var(--size-font-huge); }
-h2 { font-size: var(--size-font-big); }
-h3 { font-size: var(--size-font-large); }
+em, i em.odd{
+  font-style: italic;
+}
 
-h1, h2 { line-height: calc(1.5 * var(--size-line));
-         padding-top: calc(0.75 * var(--size-line)); }
+em.odd, i em {
+  font-style: normal;
+}
 
-div, nav, p, ol, ul, dl, pre, table { margin-top: var(--size-half-line); }
+sup {
+  vertical-align: super;
+}
 
-ul, ol { list-style-position: outside }
-ul { list-style-type: square }
-ul > li { margin-left: 2.25ch; }
-ol > li { margin-left: 2ch; }
+sub {
+  vertical-align: sub;
+}
 
-em { font-style: italic }
-b, strong { font-weight: 700 }
-small { font-size: var(--size-font-small); }
+sup, sub {
+  font-size: 12px;
+  line-height: 0;
+  margin-left: 0.2ex;
+}
 
-sup { vertical-align: super; }
-sub { vertical-align: sub; }
-sup, sub { font-size : calc(1em * var(--size-font-tiny-ratio));
-           line-height: 0; margin-left: 0.2ex; }
+ul, ol {
+  list-style-position: outside
+}
 
-img { display: block;
-      margin-top: var(--size-half-line); margin-bottom: var(--size-half-line); }
+ul>li {
+  margin-left: 22px;
+}
 
-/* Links and anchors. Note anchors need to be refined a bit further down
-   in certain cases. */
+ol>li {
+  margin-left: 27.2px;
+}
 
-a { text-decoration:none; color: var(--color-link); }
-a:hover { box-shadow:0 1px 0 0 var(--color-link); }
-a.anchor:before { content: "#" }
-a.anchor:hover { box-shadow: none; text-decoration: underline; }
-*:hover > a.anchor { visibility: visible }
-a.anchor
-{ visibility: hidden; position: absolute;
+li>*:first-child {
+  margin-top: 0
+}
+
+/* Text alignements, this should be forbidden. */
+
+.left {
+  text-align: left;
+}
+
+.right {
+  text-align: right;
+}
+
+.center {
+  text-align: center;
+}
+
+/* Links and anchors */
+
+a {
+  text-decoration: none;
+  color: var(--link-color);
+}
+
+a:hover {
+  box-shadow: 0 1px 0 0 var(--link-color);
+}
+
+/* Linked highlight */
+*:target {
+  background-color: var(--target-background) !important;
+  box-shadow: 0 0px 0 1px var(--target-shadow) !important;
+  border-radius: 1px;
+}
+
+*:hover > a.anchor {
+  visibility: visible;
+}
+
+a.anchor:before {
+  content: "#";
+}
+
+a.anchor:hover {
+  box-shadow: none;
+  text-decoration: none;
+  color: var(--anchor-hover);
+}
+
+a.anchor {
+  visibility: hidden;
+  position: absolute;
+  /* top: 0px; */
+  /* margin-left: -3ex; */
+  margin-left: -1.3em;
   font-weight: normal;
   font-style: normal;
-  margin-left: -2.5ch;
-  padding-right: 1ch; padding-left: 1ch; /* To remain selectable */
-  color: var(--color-link);
-  text-align: right;
- }
+  padding-right: 0.4em;
+  padding-left: 0.4em;
+  /* To remain selectable */
+  color: var(--anchor-color);
+}
 
-*:target /* Linked highlight */
-{ background-color: var(--color-bg-highlight);
-  box-shadow: 0 0 0 3px var(--color-bg-highlight) }
+.spec > a.anchor {
+  margin-left: -2.3em;
+  padding-right: 0.9em;
+}
 
-.xref-unresolved { box-shadow:0 1px 0 0 var(--color-broken-link)}
+.xref-unresolved {
+  color: #2C94BD;
+}
+.xref-unresolved:hover {
+  box-shadow: 0 1px 0 0 var(--xref-shadow);
+}
 
-/* Table of contents */
+/* Section and document divisions.
+   Until at least 4.03 many of the modules of the stdlib start at .h7,
+   we restart the sequence there like h2  */
 
-.toc { font-size: var(--size-font-small); }
-.toc a { color : var(--color-fg); }
-.toc a:hover { color : var(--color-link) }
-.toc ul { font-family: var(--font-headings); text-transform: uppercase;
-          margin-top: var(--size-line);
-          list-style-type: none; }
-
-.toc li { margin-left: 0; padding-left: 1ch; text-indent: -1ch; }
-.toc ul ul { font-family: var(--font-body);
-             text-transform: none;
-             margin-top:0;
-             margin-left: 1ch; }
-
-/* Module structure items */
-
-dd { padding-left: 1ch; position: relative; }
-dt table { margin-top: 0 }
-dd *:first-child { margin-top: 0 }
-dd > *:last-child { padding-bottom: var(--size-half-line) }
-dt table p:first-child { margin-top: 0 }
-
-dt + dt { padding-top: var(--size-line) } /* When there are no doc strings */
-
-.record { margin-left: 2ch }
-.variant .doc, .record .doc { padding-left: 1ch; }
-
-/* Indent on wrap */
-td.field, td.constructor, dt.spec { padding-left: 4ch; text-indent: -4ch }
-td.field > a.anchor, td.constructor > a.anchor,
-dt.spec > a.anchor { padding-right: 0.5ch; padding-left: 2ch; }
-
-/* But we don't do it for types for now because of variants and
-   records. This makes :target highlight be off. And poses
-   other problems (e.g. need to indent back the last ] or }.
-   A better markup strategy should be found here. */
-dt.spec.type { padding-left: 0; text-indent: 0 }
-dt.spec.type > a.anchor
-{ padding-left: 1ch; padding-right: 1ch; /* values from a.anchor */ }
-
-/* ocamldoc tags we'd like a targeting class and more info here
-   https://github.com/ocaml/odoc/issues/329 */
-
-dd dd > *:last-child { padding-bottom: 0 /* override above rule */ }
-dd dt { display: inline-block; }
-dd dd { display: inline-block; }
-
-/* Code and code highlighting */
-
-code, pre
-{ font-family: var(--font-mono), monospace;
+h1, h2, h3, h4, h5, h6, .h7, .h8, .h9, .h10 {
+  font-family: "Fira Sans", Helvetica, Arial, sans-serif;
   font-weight: 400;
-  font-size: calc(1em * var(--size-font-mono-ratio));
-  color: var(--color-code-fg); }
+  padding-top: 0.1em;
+  line-height: 1.2;
+  overflow-wrap: break-word;
+}
 
-code span, pre span /* Allows to use spans to control breakpoints */
-{ display: inline-block;
-  text-indent: 0; /* That bit is important because of dt.spec's text-indent */ }
+h1 {
+  font-weight: 500;
+  font-size: 2.441em;
+}
 
-pre code { font-size: inherit } /* don't apply transform twice... */
-a code { color: inherit }
-h1 code, h2 code, h3 code, h4 code, h5 code, h6 code { text-transform: none; }
+h1 {
+  font-weight: 500;
+  font-size: 1.953em;
+  box-shadow: 0 1px 0 0 var(--header-shadow);
+}
 
-pre { background: var(--color-code-block-bg);
-      padding-left: 0.8ch; padding-right: 0.8ch;
-      margin-left: -0.8ch; margin-right: -0.8ch;
-      padding-top: 1ch; padding-bottom: 1ch;
-      white-space: pre-wrap;
-      word-wrap: break-word; }
+h2 {
+  font-size: 1.563em;
+}
 
-.keyword , .hljs-keyword { color : var(--color-code-keyword); }
-.hljs-type { color : var(--color-code-type-id); }
-.hljs-string { color : var(--color-code-string); }
-.hljs-comment { color : var(--color-code-comment); font-style: italic; }
+h3 {
+  font-size: 1.25em;
+}
 
-/* Module and package lists
+small, .font_small {
+  font-size: 0.8em;
+}
 
-   Allowing indent on wrap with the anchor makes all this quite convoluted.
-   Is there a better way ? */
+h1 code, h1 tt {
+  font-size: inherit;
+  font-weight: inherit;
+}
 
-.modules, .packages { list-style-type: none; margin-left: -2ch; }
-.modules li, .packages li { padding-left: 2ch; text-indent: -2ch; }
-.modules li a.anchor, .packages li a.anchor
-{ padding-right: 0.5ch; padding-left: 2ch; }
+h2 code, h2 tt {
+  font-size: inherit;
+  font-weight: inherit;
+}
 
-.packages .version { font-size: var(--size-font-micro); }
-.packages .synopsis { padding-left: 1ch; }
+h3 code, h3 tt {
+  font-size: inherit;
+  font-weight: inherit;
+}
 
-/* Package page */
+h3 code, h3 tt {
+  font-size: inherit;
+  font-weight: inherit;
+}
 
-h1 .version, h1 nav { font-size: var(--size-font); line-height:0 }
-h1 nav { display: inline-block;
-         font-family: var(--font-body);
-         text-transform: capitalize; }
+h4 {
+  font-size: 1.12em;
+}
 
-.package.info td:first-child { padding-right: 2ch; min-width: 13ch}
-.package.info ul { list-style-type: none; display: inline; margin:0; padding:0}
-.package.info li { display: inline-block; margin:0; margin-right:1ex; }
-#info-authors li, #info-maintainers li { display: block; }
+/* Comment delimiters, hidden but accessible to screen readers and 
+   selected for copy/pasting */
 
-/* Package list page */
+/* Taken from bootstrap */
+/* See also https://stackoverflow.com/a/27769435/4220738 */
+.comment-delim {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
 
-.by-name nav a
-{ font-family: var(--font-headings);
-  font-size: var(--size-font-large);
+/* Preformatted and code */
+
+tt, code, pre {
+  font-family: "Fira Mono", courier;
+  font-weight: 400;
+}
+
+pre {
+  padding: 0.1em;
+  border: 1px solid var(--pre-border-color);
+  border-radius: 5px;
+  overflow-x: auto;
+}
+
+p code,
+li code {
+  background-color: var(--li-code-background);
+  color: var(--li-code-color);
+  border-radius: 3px;
+  padding: 0 0.3ex;
+}
+
+p a > code {
+  color: var(--link-color);
+}
+
+code {
+  white-space: pre-wrap;
+}
+
+/* Code blocks (e.g. Examples) */
+
+pre code {
+  font-size: 0.893rem;
+}
+
+/* Code lexemes */
+
+.keyword {
+  font-weight: 500;
+}
+
+.arrow { white-space: nowrap }
+
+/* Module member specification */
+
+.spec {
+  background-color: var(--spec-summary-background);
+  border-radius: 3px;
+  border-left: 4px solid var(--spec-summary-border-color);
+  border-right: 5px solid transparent;
+  padding: 0.35em 0.5em;
+}
+
+.def-doc {
+  margin-bottom: 10px;
+}
+
+/* Spacing between items */
+div.odoc-spec,.odoc-include {
+  margin-bottom: 2em;
+}
+
+.spec.type .variant {
+  margin-left: 2ch;
+}
+.spec.type .variant p {
+  margin: 0;
+  font-style: italic;
+}
+.spec.type .record {
+  margin-left: 2ch;
+}
+.spec.type .record p {
+  margin: 0;
+  font-style: italic;
+}
+
+div.def {
+  margin-top: 0;
+  text-indent: -2ex;
+  padding-left: 2ex;
+}
+
+div.def+div.def-doc {
+  margin-left: 1ex;
+  margin-top: 2.5px
+}
+
+div.def-doc>*:first-child {
+  margin-top: 0;
+}
+
+/* Collapsible inlined include and module */
+
+.odoc-include details {
+  position: relative;
+}
+
+.odoc-include.shadowed-include {
+  display: none;
+}
+
+.odoc-include details:after {
+  z-index: -100;
+  display: block;
+  content: " ";
+  position: absolute;
+  border-radius: 0 1ex 1ex 0;
+  right: -20px;
+  top: 1px;
+  bottom: 1px;
+  width: 15px;
+  background: var(--spec-details-after-background, rgba(0, 4, 15, 0.05));
+  box-shadow: 0 0px 0 1px var(--spec-details-after-shadow, rgba(204, 204, 204, 0.53));
+}
+
+.odoc-include summary {
+  position: relative;
+  margin-bottom: 1em;
+  cursor: pointer;
+  outline: none;
+}
+
+.odoc-include summary:hover {
+  background-color: var(--spec-summary-hover-background);
+}
+
+/* FIXME: Does not work in Firefox. */
+.odoc-include summary::-webkit-details-marker {
+  color: #888;
+  transform: scaleX(-1);
+  position: absolute;
+  top: calc(50% - 5px);
+  height: 11px;
+  right: -29px;
+}
+
+/* Records and variants FIXME */
+
+div.def table {
+  text-indent: 0em;
+  padding: 0;
+  margin-left: -2ex;
+}
+
+td.def {
+  padding-left: 2ex;
+}
+
+td.def-doc *:first-child {
+  margin-top: 0em;
+}
+
+/* Lists of @tags */
+
+.at-tags { list-style-type: none; margin-left: -3ex; }
+.at-tags li { padding-left: 3ex; text-indent: -3ex; }
+.at-tags .at-tag { text-transform: capitalize }
+
+/* Lists of modules */
+
+.modules { list-style-type: none; margin-left: -3ex; }
+.modules li { padding-left: 3ex; text-indent: -3ex; margin-top: 5px }
+.modules .synopsis { padding-left: 1ch; }
+
+/* Odig package index */
+
+.packages { list-style-type: none; margin-left: -3ex; }
+.packages li { padding-left: 3ex; text-indent: -3ex }
+.packages li a.anchor { padding-right: 0.5ch; padding-left: 3ch; }
+.packages .version { font-size: 10px; color: var(--by-name-version-color); }
+.packages .synopsis { padding-left: 1ch }
+
+.by-name nav a {
   text-transform: uppercase;
-  margin-right: 1ch;
-  display: inline-block; }
+  font-size: 18px;
+  margin-right: 1ex;
+  color: var(--by-name-nav-link-color,);
+  display: inline-block;
+}
+
+.by-tag nav a {
+  margin-right: 1ex;
+  color: var(--by-name-nav-link-color);
+  display: inline-block;
+}
 
 .by-tag ol { list-style-type: none; }
 .by-tag ol.tags li { margin-left: 1ch; display: inline-block }
-.by-tag td:first-child
-{ font-family: var(--font-headings);
-  font-size: var(--size-font-large);
-  text-transform: uppercase; }
+.by-tag td:first-child { text-transform: uppercase; }
 
-/* Media adjustments */
+/* Odig package page */
 
-@media only screen and (min-width:160ch) /* and (min-height: 60rem) */
-{
-  :root { --size-font: 1.125rem; } /* consider using vmin units */
+.package nav {
+  display: inline;
+  font-size: 14px;
+  font-weight: normal;
 }
 
-@media only screen and (max-width:80ch)
-{
-  .content { padding: var(--size-line); }
-  .content > * { width: 100%; }
-  .toc { position: static;
-         margin: 0; margin-top: var(--size-line);
-         width: 100%; }
-  pre { font-size: var(--size-font-tiny); }
+.package .version {
+  font-size: 14px;
 }
 
-@media print
-{
- * { -webkit-print-color-adjust: exact; }
- .content nav:first-child { visibility: hidden }
- .content > * { width: 100%; }
- .toc { position: static; width: 100%;
-        margin: 0; margin-top: var(--size-line); }
-
- /* odig.light with slight adjustements */
- :root
- { --color-bg: white;
-   --color-bg-highlight: #CAD7EF;
-   --color-fg: black;
-   --color-rule: #DADBDB;
-
-   --color-code-block-bg: #E8E8E8;
-   --color-code-fg: #16191D;
-   --color-code-comment: #747679;
-   --color-code-keyword: #874aa9;
-   --color-code-type-id: #a9874a;
-   --color-code-string: #4aa987;
-
-   --color-link:  #557dcc;
-   --color-broken-link: #f71414; }
+.package.info {
+  margin: 0;
 }
 
-/*
-Copyright (c) 2019 The odig programmers
+.package.info td:first-child {
+  font-style: italic;
+  padding-right: 2ex;
+}
 
-Permission to use, copy, modify, and/or distribute this software for any
-purpose with or without fee is hereby granted, provided that the above
-copyright notice and this permission notice appear in all copies.
+.package.info ul {
+  list-style-type: none;
+  display: inline;
+  margin: 0;
+}
 
-THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
-MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
-ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
+.package.info li {
+  display: inline-block;
+  margin: 0;
+  margin-right: 1ex;
+}
+
+#info-authors li, #info-maintainers li {
+  display: block;
+}
+
+/* Sidebar and TOC */
+
+.odoc-toc:before {
+  display: block;
+  content: "Contents";
+  text-transform: uppercase;
+  font-size: 1em;
+  margin: 1.414em 0 0.5em;
+  font-weight: 500;
+  color: var(--toc-before-color);
+  line-height: 1.2;
+}
+
+.odoc-toc {
+  position: fixed;
+  top: 0px;
+  bottom: 0px;
+  left: 0px;
+  max-width: 30ex;
+  min-width: 26ex;
+  width: 20%;
+  background: var(--toc-background);
+  overflow: auto;
+  color: var(--toc-color);
+  padding-left: 2ex;
+  padding-right: 2ex;
+}
+
+.odoc-toc ul li a {
+  font-family: "Fira Sans", sans-serif;
+  font-size: 0.95em;
+  color: var(--color);
+  font-weight: 400;
+  line-height: 1.6em;
+  display: block;
+}
+
+.odoc-toc ul li a:hover {
+  box-shadow: none;
+  text-decoration: underline;
+}
+
+/* First level titles */
+
+.odoc-toc>ul>li>a {
+  font-weight: 500;
+}
+
+.odoc-toc li ul {
+  margin: 0px;
+}
+
+.odoc-toc ul {
+  list-style-type: none;
+}
+
+.odoc-toc ul li {
+  margin: 0;
+}
+.odoc-toc>ul>li {
+  margin-bottom: 0.3em;
+}
+
+.odoc-toc ul li li {
+  border-left: 1px solid var(--toc-list-border);
+  margin-left: 5px;
+  padding-left: 12px;
+}
+
+/* Mobile adjustements. */
+
+@media only screen and (max-width: 95ex) {
+  .odoc-content {
+    margin: auto;
+    padding: 2em;
+  }
+  .odoc-toc {
+    position: static;
+    width: auto;
+    min-width: unset;
+    max-width: unset;
+    border: none;
+    padding: 0.2em 1em;
+    border-radius: 5px;
+  }
+}
+
+/* Print adjustements. */
+
+@media print {
+  body {
+    color: black;
+    background: white;
+  }
+  body nav:first-child {
+    visibility: hidden;
+  }
+}
+
+/* Syntax highlighting (based on github-gist) */
+
+.hljs {
+  display: block;
+  background: var(--code-background);
+  padding: 0.5em;
+  color: var(--color);
+  overflow-x: auto;
+}
+
+.hljs-comment,
+.hljs-meta {
+  color: #969896;
+}
+
+.hljs-string,
+.hljs-variable,
+.hljs-template-variable,
+.hljs-strong,
+.hljs-emphasis,
+.hljs-quote {
+  color: #df5000;
+}
+
+.hljs-keyword,
+.hljs-selector-tag {
+  color: #a71d5d;
+}
+
+.hljs-type,
+.hljs-class .hljs-title {
+  color: #458;
+  font-weight: 500;
+}
+
+.hljs-literal,
+.hljs-symbol,
+.hljs-bullet,
+.hljs-attribute {
+  color: #0086b3;
+}
+
+.hljs-section,
+.hljs-name {
+  color: #63a35c;
+}
+
+.hljs-tag {
+  color: #333333;
+}
+
+.hljs-attr,
+.hljs-selector-id,
+.hljs-selector-class,
+.hljs-selector-attr,
+.hljs-selector-pseudo {
+  color: #795da3;
+}
+
+.hljs-addition {
+  color: #55a532;
+  background-color: #eaffea;
+}
+
+.hljs-deletion {
+  color: #bd2c00;
+  background-color: #ffecec;
+}
+
+.hljs-link {
+  text-decoration: underline;
+}
+
+/*---------------------------------------------------------------------------
+   Copyright (c) 2016 The odoc contributors
+
+   Permission to use, copy, modify, and/or distribute this software for any
+   purpose with or without fee is hereby granted, provided that the above
+   copyright notice and this permission notice appear in all copies.
+
+   THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
+   WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
+   MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
+   ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
+   WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
+   ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
+   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+  ---------------------------------------------------------------------------*/
